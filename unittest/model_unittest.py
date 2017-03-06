@@ -26,7 +26,10 @@ Notes
 """
 from __future__ import print_function
 
-import ccad.model as cm
+try:
+    import ccad.model as cm
+except ImportError:
+    import model as cm
 
 import math
 import unittest
@@ -196,7 +199,7 @@ class TestSolidFunctions(unittest.TestCase):
         s2.translate((0.0, -2.0, -2.0))
         s3 = cm.fillet_fuse(s1, s2, 0.5)
         v3 = s3.volume()
-        #print v3, 4.0*4.0*4.0 + 0.5*4.0/3.0*math.pi*1.0**3
+        # print v3, 4.0*4.0*4.0 + 0.5*4.0/3.0*math.pi*1.0**3
         # empirical
         self.assert_(close(v3,
                            0.2 + 4.0 * 4.0 * 4.0 +
@@ -209,7 +212,7 @@ class TestSolidFunctions(unittest.TestCase):
         s2.translate((0.0, -2.0, -2.0))
         s3 = cm.fillet_cut(s1, s2, 0.25)
         v3 = s3.volume()
-        #print v3, 0.5*4.0/3.0*math.pi*1.0**3
+        # print v3, 0.5*4.0/3.0*math.pi*1.0**3
         # empirical
         self.assert_(close(v3,
                            0.5 * 4.0 / 3.0 * math.pi * 1.0 ** 3 - 0.127, 0.1))
@@ -220,7 +223,7 @@ class TestSolidFunctions(unittest.TestCase):
         s2.translate((0.0, -2.0, -2.0))
         s3 = cm.fillet_common(s1, s2, 0.25)
         v3 = s3.volume()
-        #print v3, 0.5*4.0/3.0*math.pi*1.0**3
+        # print v3, 0.5*4.0/3.0*math.pi*1.0**3
         # empirical
         self.assert_(close(v3,
                            0.5 * 4.0 / 3.0 * math.pi * 1.0 ** 3 - 0.127, 0.1))
@@ -231,7 +234,7 @@ class TestSolidFunctions(unittest.TestCase):
         s2.translate((0.0, -2.0, -2.0))
         s3 = cm.chamfer_fuse(s1, s2, 0.25)
         v3 = s3.volume()
-        #print v3, 4.0*4.0*4.0 + 0.5*4.0/3.0*math.pi*1.0**3
+        # print v3, 4.0*4.0*4.0 + 0.5*4.0/3.0*math.pi*1.0**3
         # empirical
         self.assert_(close(v3,
                            0.2 + 4.0 * 4.0 * 4.0 +
@@ -245,7 +248,7 @@ class TestSolidFunctions(unittest.TestCase):
         s2.translate((0.0, -2.0, -2.0))
         s3 = cm.chamfer_cut(s1, s2, 0.25)
         v3 = s3.volume()
-        #print v3, 0.5*2.0*2.0*2.0
+        # print v3, 0.5*2.0*2.0*2.0
         # empirical
         self.assert_(close(v3, 0.5 * 2.0 * 2.0 * 2.0 - 0.229, 0.1))
 
@@ -318,7 +321,7 @@ class TestVertex(unittest.TestCase):
                      close(r2, (1.0, 2.0, 3.0)))
 
     # This broke. ***
-    #def test_to_step(self):
+    # def test_to_step(self):
     #    s1 = cm.vertex((1.0, 2.0, 3.0))
     #    r1 = s1.center()
     #    s1.to_step('tmp.stp')
@@ -395,7 +398,7 @@ class TestEdge(unittest.TestCase):
                      close(r2, 2 * math.pi))
 
     # This broke ***
-    #def test_to_step(self):
+    # def test_to_step(self):
     #    s1 = cm.circle(1.0)
     #    r1 = s1.length()
     #    s1.to_step('tmp.stp')
@@ -502,7 +505,7 @@ class TestWire(unittest.TestCase):
                      close(r2, 5.196, eps=1e-3))
 
     # This broke ***
-    #def test_to_step(self):
+    # def test_to_step(self):
     #    s1 = cm.ngon(1.0, 3)
     #    r1 = s1.length()
     #    s1.to_step('tmp.stp')
@@ -987,7 +990,7 @@ class TestSolid(unittest.TestCase):
             if abs(face_center[2] - 0.5) < 0.1:
                 to_draft.append(count)
         s1.draft(math.radians(5.0), (0.0, 0.0, 1.0), (0.0, 0.0, 0.0), to_draft)
-        #print 'draft', s1.volume()
+        # print 'draft', s1.volume()
         # empirical
         self.assert_(close(s1.volume(), 0.835, eps=0.001))
 
@@ -1048,7 +1051,7 @@ class TestEdgePrimitives(unittest.TestCase):
         e1 = cm.circle(3.0)
         self.assert_(close(3 * 2 * math.pi, e1.length()))
 
-    # from documenation
+    # from documentation
     def test_ellipse(self):
         e1 = cm.ellipse(2.0, 1.0)
         self.assert_(close(9.701, e1.length(), 0.001))
@@ -1060,10 +1063,10 @@ class TestWirePrimitives(unittest.TestCase):
     # from documentation
     def test_polygon(self):
         w1 = cm.polygon([(0.0, 0.0, 0.0),
-                           (1.0, 0.0, 0.0),
-                           (1.5, 1.0, 0.0),
-                           (0.5, 1.5, 0.0),
-                           (-0.5, -0.5, 0.0)])
+                         (1.0, 0.0, 0.0),
+                         (1.5, 1.0, 0.0),
+                         (0.5, 1.5, 0.0),
+                         (-0.5, -0.5, 0.0)])
         self.assert_(close(5.472, w1.length(), 0.001))
 
     # from documentation
@@ -1115,10 +1118,8 @@ class TestFacePrimitives(unittest.TestCase):
         w1 = cm.wire([e1, e2])
         f1 = cm.filling(w1)
         # empirical
-        self.assert_(close(5.479, f1.area(), 0.01))  # Can vary
-                                                     # considerably
-                                                     # given the
-                                                     # spline nature
+        # Can vary considerably given the spline nature
+        self.assert_(close(5.479, f1.area(), 0.01))
 
     # from documentation
     def test_slice(self):
@@ -1145,18 +1146,18 @@ class TestSolidPrimitives(unittest.TestCase):
         self.assert_(close(4.5, s1.volume()) and
                      close(7.98, s2.volume()))
 
-    # from documenation
+    # from documentation
     def test_cylinder(self):
         s1 = cm.cylinder(1.0, 2.0)
         self.assert_(close(2.0 * math.pi, s1.volume()))
 
-    # from documenation
+    # from documentation
     def test_sphere(self):
         s1 = cm.sphere(5.0)
         self.assert_(close(
                 4.0 / 3.0 * math.pi * 5 ** 3, s1.volume()))
 
-    # from documenation
+    # from documentation
     def test_cone(self):
         s1 = cm.cone(4.0, 2.0, 2.0)
         self.assert_(close(
@@ -1164,7 +1165,7 @@ class TestSolidPrimitives(unittest.TestCase):
                 (math.pi * 4.0 ** 2 * 4.0 - math.pi * 2.0 ** 2 * 2.0),
                 s1.volume()))
 
-    # from documenation
+    # from documentation
     def test_bezier_cone(self):
         s1 = cm.bezier_cone(4.0, 2.0, 2.0)
         self.assert_(close(

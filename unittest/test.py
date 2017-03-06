@@ -1,6 +1,11 @@
 # coding: utf-8
 
-from ccad.model import *
+r"""Simple sphere display test"""
+
+try:
+    from ccad.model import *
+except ImportError:
+    from model import *
 import OCC.Display.SimpleGui as SimpleGui
 
 s1 = sphere(1.0)
