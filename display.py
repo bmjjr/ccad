@@ -1,3 +1,5 @@
+# coding: utf-8
+
 """
 Description
 -----------
@@ -26,12 +28,6 @@ View LICENSE for details.
 """
 
 from __future__ import print_function
-# Globals
-version = '0.13'  # Change also in setup.py, doc/conf.py
-interactive = True
-manager = 'qt'
-app = None
-
 
 import os as _os
 import sys as _sys
@@ -67,16 +63,25 @@ from OCC.BRepTools import BRepTools_WireExplorer as _BRepTools_WireExplorer
 from OCC.HLRAlgo import HLRAlgo_Projector as _HLRAlgo_Projector
 from OCC.HLRBRep import (HLRBRep_Algo as _HLRBRep_Algo,
                          HLRBRep_HLRToShape as _HLRBRep_HLRToShape)
-from OCC.TCollection import (TCollection_ExtendedString as
-                             _TCollection_ExtendedString)
+# from OCC.TCollection import (TCollection_ExtendedString as TCollection_ExtendedString)
 from OCC.TopExp import TopExp_Explorer as _TopExp_Explorer
 from OCC.Visual3d import Visual3d_ViewOrientation as _Visual3d_ViewOrientation
 from OCC.Visualization import Display3d as _Display3d
 
-import ccad.model as _cm
+try:
+    import ccad.model as _cm
+except ImportError:
+    import model as _cm
 
 
-class view_qt(_QtGui.QWidget):
+# Globals
+version = '0.13'  # Change also in setup.py, doc/conf.py
+interactive = True
+manager = 'qt'
+app = None
+
+
+class ViewQt(_QtGui.QWidget):
     """
     A qt-based viewer
     """
@@ -85,11 +90,11 @@ class view_qt(_QtGui.QWidget):
         """
         Perspective doesn't seem to work in pythonocc ***.  Don't use.
         """
-        super(view_qt, self).__init__()
+        super(ViewQt, self).__init__()
         self.setMouseTracking(True)
-        #self.setFocusPolicy(_QtCore.Qt.WheelFocus)
-        #self.setSizePolicy(_QtGui.QSizePolicy(_QtGui.QSizePolicy.Ignored,
-        #                                      _QtGui.QSizePolicy.Ignored))
+        # self.setFocusPolicy(_QtCore.Qt.WheelFocus)
+        # self.setSizePolicy(_QtGui.QSizePolicy(_QtGui.QSizePolicy.Ignored,
+        #                                       _QtGui.QSizePolicy.Ignored))
 
         self.REGULAR_CURSOR = _QtCore.Qt.ArrowCursor
         self.WAIT_CURSOR = _QtCore.Qt.WaitCursor
@@ -133,19 +138,18 @@ class view_qt(_QtGui.QWidget):
         vbox1.setMargin(0)
         vbox1.setSpacing(0)
 
-        ## Menu Space
+        # Menu Space
         self.menubar = _QtGui.QMenuBar()
         vbox1.setMenuBar(self.menubar)
 
-        ### File
+        # File
         file_menu = _QtGui.QMenu('&File', self)
         self.menubar.addMenu(file_menu)
 
-        file_save = file_menu.addAction('&Save', self.save)
-        file_quit = file_menu.addAction('&Quit', self.quit,
-                                        self.key_lookup('quit()'))
+        file_menu.addAction('&Save', self.save)
+        file_menu.addAction('&Quit', self.quit, self.key_lookup('quit()'))
 
-        ### view
+        # view
         view_menu = _QtGui.QMenu('&View', self)
         self.menubar.addMenu(view_menu)
 
@@ -167,69 +171,44 @@ class view_qt(_QtGui.QWidget):
 
         view_side = _QtGui.QMenu('Side', self)
         view_menu.addMenu(view_side)
-        view_front = view_side.addAction(
-            'Front',
-            lambda view='front': self.viewstandard(view),
-            self.key_lookup('viewstandard("front")'))
-        view_top = view_side.addAction(
-            'Top',
-            lambda view='top': self.viewstandard(view),
-            self.key_lookup('viewstandard("top")'))
-        view_right = view_side.addAction(
-            'Right',
-            lambda view='right': self.viewstandard(view),
-            self.key_lookup('viewstandard("right")'))
-        view_back = view_side.addAction(
-            'Back',
-            lambda view='back': self.viewstandard(view),
-            self.key_lookup('viewstandard("back")'))
-        view_bottom = view_side.addAction(
-            'Bottom',
-            lambda view='bottom': self.viewstandard(view),
-            self.key_lookup('viewstandard("bottom")'))
-        view_left = view_side.addAction(
-            'Left',
-            lambda view='left': self.viewstandard(view),
-            self.key_lookup('viewstandard("left")'))
+        view_side.addAction('Front', lambda view='front': self.viewstandard(view),
+                            self.key_lookup('viewstandard("front")'))
+        view_side.addAction('Top', lambda view='top': self.viewstandard(view),
+                            self.key_lookup('viewstandard("top")'))
+        view_side.addAction('Right', lambda view='right': self.viewstandard(view),
+                            self.key_lookup('viewstandard("right")'))
+        view_side.addAction('Back', lambda view='back': self.viewstandard(view),
+                            self.key_lookup('viewstandard("back")'))
+        view_side.addAction('Bottom', lambda view='bottom': self.viewstandard(view),
+                            self.key_lookup('viewstandard("bottom")'))
+        view_side.addAction('Left', lambda view='left': self.viewstandard(view),
+                            self.key_lookup('viewstandard("left")'))
 
         view_orbit = _QtGui.QMenu('Orbit', self)
         view_menu.addMenu(view_orbit)
-        view_orbitup = view_orbit.addAction('Up', self.orbitup,
-                                            self.key_lookup('orbitup()'))
-        view_orbitdown = view_orbit.addAction('Down', self.orbitdown,
-                                              self.key_lookup('orbitdown()'))
-        view_orbitleft = view_orbit.addAction('Left', self.orbitleft,
-                                              self.key_lookup('orbitleft()'))
-        view_orbitright = view_orbit.addAction('Right', self.orbitright,
-                                               self.key_lookup('orbitright()'))
-        view_orbitccw = view_orbit.addAction('CCW', self.rotateccw,
-                                             self.key_lookup('rotateccw()'))
-        view_orbitleft = view_orbit.addAction('CW', self.rotatecw,
-                                              self.key_lookup('rotatecw()'))
+        view_orbit.addAction('Up', self.orbitup, self.key_lookup('orbitup()'))
+        view_orbit.addAction('Down', self.orbitdown, self.key_lookup('orbitdown()'))
+        view_orbit.addAction('Left', self.orbitleft, self.key_lookup('orbitleft()'))
+        view_orbit.addAction('Right', self.orbitright, self.key_lookup('orbitright()'))
+        view_orbit.addAction('CCW', self.rotateccw, self.key_lookup('rotateccw()'))
+        view_orbit.addAction('CW', self.rotatecw, self.key_lookup('rotatecw()'))
 
         view_pan = _QtGui.QMenu('Pan', self)
         view_menu.addMenu(view_pan)
-        view_panup = view_pan.addAction('Up', self.panup,
-                                        self.key_lookup('panup()'))
-        view_pandown = view_pan.addAction('Down', self.pandown,
-                                          self.key_lookup('pandown()'))
-        view_panleft = view_pan.addAction('Left', self.panleft,
-                                          self.key_lookup('panleft()'))
-        view_panright = view_pan.addAction('Right', self.panright,
-                                           self.key_lookup('panright()'))
+        view_pan.addAction('Up', self.panup, self.key_lookup('panup()'))
+        view_pan.addAction('Down', self.pandown, self.key_lookup('pandown()'))
+        view_pan.addAction('Left', self.panleft, self.key_lookup('panleft()'))
+        view_pan.addAction('Right', self.panright, self.key_lookup('panright()'))
 
         view_zoom = _QtGui.QMenu('Zoom', self)
         view_menu.addMenu(view_zoom)
-        view_zoomin = view_zoom.addAction('In', self.zoomin,
-                                          self.key_lookup('zoomin()'))
-        view_zoomout = view_zoom.addAction('Out', self.zoomout,
-                                           self.key_lookup('zoomout()'))
-        view_fit = view_zoom.addAction('Fit to Screen', self.fit,
-                                       self.key_lookup('fit()'))
+        view_zoom.addAction('In', self.zoomin, self.key_lookup('zoomin()'))
+        view_zoom.addAction('Out', self.zoomout, self.key_lookup('zoomout()'))
+        view_zoom.addAction('Fit to Screen', self.fit, self.key_lookup('fit()'))
 
         view_menu.addAction('Redraw', self.redraw, self.key_lookup('redraw()'))
 
-        ### select
+        # select
         select_menu = _QtGui.QMenu('&Select', self)
         self.menubar.addMenu(select_menu)
         select_container = _QtGui.QActionGroup(self)
@@ -256,15 +235,13 @@ class view_qt(_QtGui.QWidget):
         select_shape.setChecked(True)
         select_container.addAction(select_shape)
 
-        select_query = select_menu.addAction('Query',
-                                             self.query,
-                                             self.key_lookup('query()'))
+        select_menu.addAction('Query', self.query, self.key_lookup('query()'))
 
-        ### help
+        # help
         help_menu = _QtGui.QMenu('&Help', self)
         self.menubar.addMenu(help_menu)
-        help_manual = help_menu.addAction('&Manual', self.display_manual)
-        help_about = help_menu.addAction('&About', self.about)
+        help_menu.addAction('&Manual', self.display_manual)
+        help_menu.addAction('&About', self.about)
 
         # OpenGL Space
         self.glarea = GLWidget(self)
@@ -317,7 +294,7 @@ class view_qt(_QtGui.QWidget):
         Generates all needed menus to create the passed hierarchy.
         """
         last_menu = self.add_menu(hierarchy[:-1])
-        menuitem = last_menu.addAction(hierarchy[-1], lambda: func(*args))
+        last_menu.addAction(hierarchy[-1], lambda: func(*args))
 
     # Event Functions
     def redraw(self):
@@ -410,7 +387,8 @@ class view_qt(_QtGui.QWidget):
         else:
             self.status_bar.setText('Unknown view' + viewtype)
 
-    def orbitup(self, widget=None, rapid=False):
+    # def orbitup(self, widget=None, rapid=False):
+    def orbitup(self):
         """
         The observer has moved up
 
@@ -421,85 +399,99 @@ class view_qt(_QtGui.QWidget):
         pythonocc doesn't implement OCC's Gravity.
         """
         # The better way (pythonocc doesn't implement)
-        #gravity = self.glarea.occ_view.Gravity()
-        #self.glarea.occ_view.Rotate(0.0, -self.morbit, 0.0,
+        # gravity = self.glarea.occ_view.Gravity()
+        # self.glarea.occ_view.Rotate(0.0, -self.morbit, 0.0,
         #                            gravity[0], gravity[1], gravity[2])
         self.glarea.occ_view.Rotate(0.0, -self.morbit, 0.0)
 
-    def panup(self, widget=None, rapid=False):
+    # def panup(self, widget=None, rapid=False):
+    def panup(self):
         """
         The scene is panned up
         """
         self.glarea.occ_view.Pan(0, -self.glarea.mpan)
 
-    def orbitdown(self, widget=None, rapid=False):
+    # def orbitdown(self, widget=None, rapid=False):
+    def orbitdown(self):
         """
         The observer has moved down
         """
         self.glarea.occ_view.Rotate(0.0, self.morbit, 0.0)
 
-    def pandown(self, widget=None, rapid=False):
+    # def pandown(self, widget=None, rapid=False):
+    def pandown(self):
         """
         The scene is panned down
         """
         self.glarea.occ_view.Pan(0, self.glarea.mpan)
 
-    def orbitright(self, widget=None, rapid=False):
+    # def orbitright(self, widget=None, rapid=False):
+    def orbitright(self):
         """
         The observer has moved to the right
         """
         self.glarea.occ_view.Rotate(-self.morbit, 0.0, 0.0)
 
-    def panright(self, widget=None, rapid=False):
+    # def panright(self, widget=None, rapid=False):
+    def panright(self):
+
         """
         The scene is panned right
         """
         self.glarea.occ_view.Pan(-self.glarea.mpan, 0)
 
-    def orbitleft(self, widget=None, rapid=False):
+    # def orbitleft(self, widget=None, rapid=False):
+    def orbitleft(self):
         """
         The observer has moved to the left
         """
         self.glarea.occ_view.Rotate(self.morbit, 0.0, 0.0)
 
-    def panleft(self, widget=None, rapid=False):
+    # def panleft(self, widget=None, rapid=False):
+    def panleft(self):
         """
         The scene is panned to the left
         """
         self.glarea.occ_view.Pan(self.glarea.mpan, 0)
 
-    def zoomin(self, widget=None, rapid=False):
+    # def zoomin(self, widget=None, rapid=False):
+    def zoomin(self):
         """
         Zoom in
         """
         self.glarea.occ_view.SetZoom(_math.sqrt(2.0))
 
-    def zoomout(self, widget=None, rapid=False):
+    # def zoomout(self, widget=None, rapid=False):
+    def zoomout(self):
         """
         Zoom out
         """
         self.glarea.occ_view.SetZoom(_math.sqrt(0.5))
 
-    def rotateccw(self, widget=None, rapid=False):
+    # def rotateccw(self, widget=None, rapid=False):
+    def rotateccw(self):
         """
         The scene is rotated counter clockwise
         """
         self.glarea.occ_view.Rotate(0.0, 0.0, -self.morbit)
 
-    def rotatecw(self, widget=None, rapid=False):
+    # def rotatecw(self, widget=None, rapid=False):
+    def rotatecw(self):
         """
         The scene is rotated clockwise
         """
         self.glarea.occ_view.Rotate(0.0, 0.0, self.morbit)
 
-    def fit(self, widget=None):
+    # def fit(self, widget=None):
+    def fit(self):
         """
         Fit the scene to the screen
         """
         self.glarea.occ_view.ZFitAll()
         self.glarea.occ_view.FitAll()
 
-    def query(self, widget=None):
+    # def query(self, widget=None):
+    def query(self):
         """
         Reports the properties of a selection
         Should do something other than print (popup?) ***
@@ -559,9 +551,9 @@ class view_qt(_QtGui.QWidget):
         Sets the size of the window in pixels.  Size is a 2-tuple.
         """
         # This worked, but adjustSize is limited to 2/3 screen size
-        #self.glarea.SCR = size
-        #self.glarea.updateGeometry()
-        #self.adjustSize()
+        # self.glarea.SCR = size
+        # self.glarea.updateGeometry()
+        # self.adjustSize()
 
         # self.glarea.resize didn't work.  This worked but it's based
         # on the non-glarea stuff not growing -- a potential future
@@ -606,7 +598,7 @@ class view_qt(_QtGui.QWidget):
                                'top_left': _Aspect.Aspect_TOTP_LEFT_UPPER}
             local_position = local_positions[position]
             # Can't set Triedron color RGB-wise!
-            #qcolor = _Quantity.Quantity_Color(
+            # qcolor = _Quantity.Quantity_Color(
             #    color[0], color[1], color[2], _Quantity.Quantity_TOC_RGB)
             if color == (1.0, 1.0, 1.0):
                 qcolor = _Quantity.Quantity_NOC_WHITE
@@ -616,7 +608,7 @@ class view_qt(_QtGui.QWidget):
                                                  qcolor,
                                                  size,
                                                  _V3d.V3d_ZBUFFER)
-                                                 #_V3d.V3d_WIREFRAME)
+                                                 # _V3d.V3d_WIREFRAME)
 
     # Things to Show Functions
     def display(self, shape, color=None, material='default', transparency=0.0,
@@ -679,10 +671,10 @@ class view_qt(_QtGui.QWidget):
         # Set Color
         if not color:
             color = self.foreground
-        #print('color', color)
+        # print('color', color)
 
-        #drawer = AIS_Drawer()
-        #handle_drawer = drawer.GetHandle()
+        # drawer = AIS_Drawer()
+        # handle_drawer = drawer.GetHandle()
 
         handle_drawer = aisshape.Attributes()
         drawer = handle_drawer.GetObject()
@@ -706,14 +698,14 @@ class view_qt(_QtGui.QWidget):
                                               local_line_type,
                                               line_width)
         handle_aspect_line = aspect_line.GetHandle()
-        #drawer = self.glarea.occ_context.DefaultDrawer().GetObject()
+        # drawer = self.glarea.occ_context.DefaultDrawer().GetObject()
         drawer.SetSeenLineAspect(handle_aspect_line)
         drawer.SetWireAspect(handle_aspect_line)
 
         # Set Shading Type
         aspect_shading = _Prs3d.Prs3d_ShadingAspect()
         handle_aspect_shading = aspect_shading.GetHandle()
-        #print('shading color', color)
+        # print('shading color', color)
         aspect_shading.SetColor(qcolor, _Aspect.Aspect_TOFM_BOTH_SIDE)
         local_materials = {'brass': _Graphic3d.Graphic3d_NOM_BRASS,
                            'bronze': _Graphic3d.Graphic3d_NOM_BRONZE,
@@ -725,8 +717,7 @@ class view_qt(_QtGui.QWidget):
                            'silver': _Graphic3d.Graphic3d_NOM_SILVER,
                            'steel': _Graphic3d.Graphic3d_NOM_STEEL,
                            'stone': _Graphic3d.Graphic3d_NOM_STONE,
-                           'shiny_plastic': \
-                               _Graphic3d.Graphic3d_NOM_SHINY_PLASTIC,
+                           'shiny_plastic': _Graphic3d.Graphic3d_NOM_SHINY_PLASTIC,
                            'satin': _Graphic3d.Graphic3d_NOM_SATIN,
                            'metallized': _Graphic3d.Graphic3d_NOM_METALIZED,
                            'neon_gnc': _Graphic3d.Graphic3d_NOM_NEON_GNC,
@@ -901,10 +892,10 @@ class view_qt(_QtGui.QWidget):
             self.glarea.occ_context.SetDisplayMode(_AIS.AIS_ExactHLR)
 
         # Draws hidden lines
-        #presentation = Prs3d_LineAspect(
+        # presentation = Prs3d_LineAspect(
         #    Quantity_NOC_BLACK, Aspect_TOL_DASH, 3)
-        #self.glarea.occ_context.SetHiddenLineAspect(presentation.GetHandle())
-        #self.glarea.occ_context.EnableDrawHiddenLine()
+        # self.glarea.occ_context.SetHiddenLineAspect(presentation.GetHandle())
+        # self.glarea.occ_context.EnableDrawHiddenLine()
 
     def reset_mode_drawing(self):
         """
@@ -1035,10 +1026,10 @@ class view_qt(_QtGui.QWidget):
                 self.status_bar.setText('Saved ' + filename)
 
             # This works and allows higher resolutions
-            #pixmap = Image_AlienPixMap()
-            #size = self.glarea.size()
-            #self.glarea.occ_view.ToPixMap(pixmap, size.width(), size.height())
-            #pixmap.Save(TCollection_AsciiString(name))
+            # pixmap = Image_AlienPixMap()
+            # size = self.glarea.size()
+            # self.glarea.occ_view.ToPixMap(pixmap, size.width(), size.height())
+            # pixmap.Save(TCollection_AsciiString(name))
 
     def perspective_length(self, distance):
         """
@@ -1071,7 +1062,7 @@ class GLWidget(_QtGui.QWidget):
     def __init__(self, parent=None):
         super(GLWidget, self).__init__(parent)
         self.setMouseTracking(True)
-        #self.setFocusPolicy(_QtCore.Qt.WheelFocus)
+        # self.setFocusPolicy(_QtCore.Qt.WheelFocus)
         self.setAttribute(_QtCore.Qt.WA_PaintOnScreen)
         self.setAttribute(_QtCore.Qt.WA_NoSystemBackground)
         self.setSizePolicy(_QtGui.QSizePolicy(_QtGui.QSizePolicy.Expanding,
@@ -1126,7 +1117,7 @@ def view(perspective=False):
     if manager == 'qt':
         if not app:
             app = _QtGui.QApplication([])
-        v1 = view_qt(perspective)
+        v1 = ViewQt(perspective)
         return v1
     else:
         print('Error: Manager', manager, 'not supported')
@@ -1144,7 +1135,7 @@ def start():  # For non-interactive sessions (don't run in ipython)
 
 if __name__ == '__main__':
     import model as cm
-    view = view_qt()
+    view = ViewQt()
     view.set_background((0.35, 0.35, 0.35))
     s1 = cm.sphere(1.0)
     view.display(s1, (0.5, 0.0, 0.0), line_type='solid', line_width=3)
