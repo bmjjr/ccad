@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from ccad.model import *
 import OCC.Display.SimpleGui as SimpleGui
 
