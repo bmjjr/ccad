@@ -257,8 +257,8 @@ class TestSolidFunctions(unittest.TestCase):
         s1.translate((-2.0, -1.0, -1.0))
         s2 = cm.box(4.0, 4.0, 4.0)
         s2.translate((0.0, -2.0, -2.0))
-        f1 = s1.nearest('face', [(0.0, 0.0, 0.0)])[0]
-        f2 = s2.nearest('face', [(0.0, 0.0, 0.0)])[0]
+        f1 = s1.nearest('Face', [(0.0, 0.0, 0.0)])[0]
+        f2 = s2.nearest('Face', [(0.0, 0.0, 0.0)])[0]
         s3 = cm.glue(s1, s2, [(f1, f2)])
         v3 = s3.volume()
         self.assert_(close(v3, 2.0 * 2.0 * 2.0 + 4.0 * 4.0 * 4.0))
@@ -268,8 +268,8 @@ class TestSolidFunctions(unittest.TestCase):
         s1.translate((-2.0, -1.0, -1.0))
         s2 = cm.box(2.0, 2.0, 2.0)
         s2.translate((0.0, -1.0, -1.0))
-        f1 = s1.nearest('face', [(0.0, 0.0, 0.0)])[0]
-        f2 = s2.nearest('face', [(0.0, 0.0, 0.0)])[0]
+        f1 = s1.nearest('Face', [(0.0, 0.0, 0.0)])[0]
+        f2 = s2.nearest('Face', [(0.0, 0.0, 0.0)])[0]
         s3 = cm.glue(s1, s2, [(f1, f2)])
         v3 = s3.volume()
         self.assert_(close(v3, 2 * 2.0 * 2.0 * 2.0))
@@ -303,7 +303,7 @@ class TestVertex(unittest.TestCase):
 
     # inherited from shape
     def test_to_brep(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         r1 = s1.center()
         s1.to_brep('tmp.brp')
         s2 = cm.from_brep('tmp.brp')
@@ -312,7 +312,7 @@ class TestVertex(unittest.TestCase):
                      close(r2, (1.0, 2.0, 3.0)))
 
     def test_to_iges(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         r1 = s1.center()
         s1.to_iges('tmp.igs', brep_mode=1)
         s2 = cm.from_iges('tmp.igs')
@@ -333,33 +333,33 @@ class TestVertex(unittest.TestCase):
     # subshapes skipped since there are no vertex subshapes
 
     def test_copy(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         s2 = s1.copy()
         s1.translate((1.0, 1.0, 1.0))
         self.assert_(close(s2.center(), (1.0, 2.0, 3.0)) and
                      close(s1.center(), (2.0, 3.0, 4.0)))
 
     def test_bounds(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         self.assert_(close(s1.bounds(), (1.0, 2.0, 3.0, 1.0, 2.0, 3.0)))
 
     def test_center(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         self.assert_(close(s1.center(), (1.0, 2.0, 3.0)))
 
     # subcenters skipped since there are no vertex subshapes
 
     def test_check(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         self.assert_(s1.check())
 
     def test_fix(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         s1.fix()
         self.assert_(close(s1.center(), (1.0, 2.0, 3.0)))
 
     def test_dump(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         s1.dump()
         self.assert_(True)
 
@@ -372,7 +372,7 @@ class TestVertex(unittest.TestCase):
     # center skipped since verified above
 
     def tolerance(self):
-        s1 = cm.vertex((1.0, 2.0, 3.0))
+        s1 = cm.Vertex((1.0, 2.0, 3.0))
         self.assert_(close(s1.tolerance(), 1e-7, eps=1e-9))
 
 
@@ -409,7 +409,7 @@ class TestEdge(unittest.TestCase):
 
     def test_subshapes(self):
         s1 = cm.segment((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
-        vs = s1.subshapes('vertex')
+        vs = s1.subshapes('Vertex')
         self.assert_(len(vs) == 2 and
                      close(vs[0].center(), (0.0, 0.0, 0.0)) and
                      close(vs[1].center(), (1.0, 1.0, 1.0)))
@@ -433,7 +433,7 @@ class TestEdge(unittest.TestCase):
 
     def test_subcenters(self):
         s1 = cm.segment((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
-        cs = s1.subcenters('vertex')
+        cs = s1.subcenters('Vertex')
         self.assert_(close(cs[0], (0.0, 0.0, 0.0)) and
                      close(cs[1], (1.0, 1.0, 1.0)))
 
@@ -453,7 +453,7 @@ class TestEdge(unittest.TestCase):
 
     def test_nearest(self):
         s1 = cm.segment((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))
-        i1 = s1.nearest('vertex', [(1.0, 1.0, 1.0)])[0]
+        i1 = s1.nearest('Vertex', [(1.0, 1.0, 1.0)])[0]
         self.assert_(i1 == 1)
 
     def test_subtolerance(self):
@@ -516,8 +516,8 @@ class TestWire(unittest.TestCase):
 
     def test_subshapes(self):
         s1 = cm.ngon(1.0, 3)
-        es = s1.subshapes('edge')
-        vs = s1.subshapes('vertex')
+        es = s1.subshapes('Edge')
+        vs = s1.subshapes('Vertex')
         self.assert_(len(vs) == 3 and len(es) == 3)
 
     def test_copy(self):
@@ -541,7 +541,7 @@ class TestWire(unittest.TestCase):
 
     def test_subcenters(self):
         s1 = cm.ngon(1.0, 3)
-        cs = s1.subcenters('vertex')
+        cs = s1.subcenters('Vertex')
         rt3d2 = math.sqrt(3.0) / 2
         self.assert_(close(cs[0], (-0.5, rt3d2, 0.0)) and
                      close(cs[1], (-0.5, -rt3d2, 0.0)) and
@@ -564,7 +564,7 @@ class TestWire(unittest.TestCase):
 
     def test_nearest(self):
         s1 = cm.ngon(1.0, 3)
-        i1 = s1.nearest('vertex', [(1.0, 0.0, 0.0)])[0]
+        i1 = s1.nearest('Vertex', [(1.0, 0.0, 0.0)])[0]
         self.assert_(i1 == 2)
 
     def test_subtolerance(self):
@@ -622,9 +622,9 @@ class TestFace(unittest.TestCase):
 
     def test_subshapes(self):
         s1 = cm.plane(cm.ngon(1.0, 3))
-        ws = s1.subshapes('wire')
-        es = s1.subshapes('edge')
-        vs = s1.subshapes('vertex')
+        ws = s1.subshapes('Wire')
+        es = s1.subshapes('Edge')
+        vs = s1.subshapes('Vertex')
         self.assert_(len(vs) == 3 and len(es) == 3 and len(ws) == 1)
 
     def test_copy(self):
@@ -648,7 +648,7 @@ class TestFace(unittest.TestCase):
 
     def test_subcenters(self):
         s1 = cm.plane(cm.ngon(1.0, 3))
-        cs = s1.subcenters('vertex')
+        cs = s1.subcenters('Vertex')
         rt3d2 = math.sqrt(3.0) / 2
         self.assert_(close(cs[0], (-0.5, rt3d2, 0.0)) and
                      close(cs[1], (-0.5, -rt3d2, 0.0)) and
@@ -671,7 +671,7 @@ class TestFace(unittest.TestCase):
 
     def test_nearest(self):
         s1 = cm.plane(cm.ngon(1.0, 3))
-        i1 = s1.nearest('vertex', [(1.0, 0.0, 0.0)])[0]
+        i1 = s1.nearest('Vertex', [(1.0, 0.0, 0.0)])[0]
         self.assert_(i1 == 2)
 
     def test_subtolerance(self):
@@ -716,7 +716,7 @@ class TestFace(unittest.TestCase):
         c1 = cm.cylinder(1.0, 1.0)
         c2 = cm.cylinder(2.0, 1.0)
         s1 = c2 - c1
-        f1 = s1.nearest('face', [(0.0, 0.0, 1.0)])[0]
+        f1 = s1.nearest('Face', [(0.0, 0.0, 1.0)])[0]
         iw = f1.inner_wires()[0]
         self.assert_(close(iw.length(), 2 * math.pi * 1.0))
 
@@ -737,7 +737,7 @@ class TestShell(unittest.TestCase):
 
     # inherited from shape
     def test_to_brep(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         r1 = s1.area()
         s1.to_brep('tmp.brp')
         s2 = cm.from_brep('tmp.brp')
@@ -746,7 +746,7 @@ class TestShell(unittest.TestCase):
                      close(r2, 22.0))
 
     def test_to_iges(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         r1 = s1.area()
         s1.to_iges('tmp.igs', brep_mode=1)
         s2 = cm.from_iges('tmp.igs')
@@ -755,7 +755,7 @@ class TestShell(unittest.TestCase):
                      close(r2, 22.0))
 
     def test_to_step(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         r1 = s1.area()
         s1.to_step('tmp.stp')
         s2 = cm.from_step('tmp.stp')
@@ -764,33 +764,33 @@ class TestShell(unittest.TestCase):
                      close(r2, 22.0))
 
     def test_subshapes(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
-        fs = s1.subshapes('face')
-        ws = s1.subshapes('wire')
-        es = s1.subshapes('edge')
-        vs = s1.subshapes('vertex')
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
+        fs = s1.subshapes('Face')
+        ws = s1.subshapes('Wire')
+        es = s1.subshapes('Edge')
+        vs = s1.subshapes('Vertex')
         self.assert_(len(vs) == 8 and len(es) == 12 and len(ws) == 6 and
                      len(fs) == 6)
 
     def test_copy(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         s2 = s1.copy()
         s1.translate((1.0, 1.0, 1.0))
         self.assert_(close(s2.center(), (0.5, 1.0, 1.5)) and
                      close(s1.center(), (1.5, 2.0, 2.5)))
 
     def test_bounds(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         self.assert_(close(
                 s1.bounds(), (0.0, 0.0, 0.0, 1.0, 2.0, 3.0), eps=0.1))
 
     def test_center(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         self.assert_(close(s1.center(), (0.5, 1.0, 1.5)))
 
     def test_subcenters(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
-        cs = s1.subcenters('face')
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
+        cs = s1.subcenters('Face')
         center = [0.0, 0.0, 0.0]
         for c in cs:
             center[0] = center[0] + c[0]
@@ -799,27 +799,27 @@ class TestShell(unittest.TestCase):
         self.assert_(close(center, (6.0 * 0.5, 6.0 * 1.0, 6.0 * 1.5)))
 
     def test_check(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         self.assert_(s1.check())
 
     def test_fix(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         s1.fix()
         self.assert_(close(s1.center(), (0.5, 1.0, 1.5)))
 
     def test_dump(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         s1.dump()
         self.assert_(True)
 
     def test_nearest(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
-        i1 = s1.nearest('vertex', [(1.0, 2.0, 3.0)])[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
+        i1 = s1.nearest('Vertex', [(1.0, 2.0, 3.0)])[0]
         self.assert_(close(
-                s1.subshapes('vertex')[i1].center(), (1.0, 2.0, 3.0)))
+                s1.subshapes('Vertex')[i1].center(), (1.0, 2.0, 3.0)))
 
     def test_subtolerance(self):
-        s1 = cm.box(1.0, 2.0, 3.0).subshapes('shell')[0]
+        s1 = cm.box(1.0, 2.0, 3.0).subshapes('Shell')[0]
         subtols = s1.subtolerance()
         self.assert_(close(subtols, (1e-7, 1e-7, 1e-7), eps=1e-9))
 
@@ -862,11 +862,11 @@ class TestSolid(unittest.TestCase):
 
     def test_subshapes(self):
         s1 = cm.box(1.0, 2.0, 3.0)
-        ss = s1.subshapes('shell')
-        fs = s1.subshapes('face')
-        ws = s1.subshapes('wire')
-        es = s1.subshapes('edge')
-        vs = s1.subshapes('vertex')
+        ss = s1.subshapes('Shell')
+        fs = s1.subshapes('Face')
+        ws = s1.subshapes('Wire')
+        es = s1.subshapes('Edge')
+        vs = s1.subshapes('Vertex')
         self.assert_(len(vs) == 8 and len(es) == 12 and len(ws) == 6 and
                      len(fs) == 6 and len(ss) == 1)
 
@@ -888,7 +888,7 @@ class TestSolid(unittest.TestCase):
 
     def test_subcenters(self):
         s1 = cm.box(1.0, 2.0, 3.0)
-        cs = s1.subcenters('face')
+        cs = s1.subcenters('Face')
         center = [0.0, 0.0, 0.0]
         for c in cs:
             center[0] = center[0] + c[0]
@@ -912,9 +912,9 @@ class TestSolid(unittest.TestCase):
 
     def test_nearest(self):
         s1 = cm.box(1.0, 2.0, 3.0)
-        i1 = s1.nearest('vertex', [(1.0, 2.0, 3.0)])[0]
+        i1 = s1.nearest('Vertex', [(1.0, 2.0, 3.0)])[0]
         self.assert_(close(
-                s1.subshapes('vertex')[i1].center(), (1.0, 2.0, 3.0)))
+                s1.subshapes('Vertex')[i1].center(), (1.0, 2.0, 3.0)))
 
     def test_subtolerance(self):
         s1 = cm.box(1.0, 2.0, 3.0)
@@ -984,7 +984,7 @@ class TestSolid(unittest.TestCase):
     def test_draft(self):
         s1 = cm.box(1.0, 1.0, 1.0)
         s1.translate((-0.5, -0.5, 0.0))
-        face_centers = s1.subcenters('face')
+        face_centers = s1.subcenters('Face')
         to_draft = []
         for count, face_center in enumerate(face_centers):
             if abs(face_center[2] - 0.5) < 0.1:
@@ -1002,9 +1002,9 @@ class TestSolid(unittest.TestCase):
         s2 = s1.copy()
         s2.translate((1.0, 0.5, 0.5))
         s3 = s1 - s2
-        count1 = len(s3.subshapes('face'))
+        count1 = len(s3.subshapes('Face'))
         s3.simplify()
-        count2 = len(s3.subshapes('face'))
+        count2 = len(s3.subshapes('Face'))
         self.assert_(count1 == 7 and count2 == 6)
 
 
@@ -1115,7 +1115,7 @@ class TestFacePrimitives(unittest.TestCase):
                         (-1.5, 0.8, 1.0),
                         (-0.8, 1.2, 0.2),
                         (0.0, 1.0, 0.0)])
-        w1 = cm.wire([e1, e2])
+        w1 = cm.Wire([e1, e2])
         f1 = cm.filling(w1)
         # empirical
         # Can vary considerably given the spline nature
@@ -1190,10 +1190,10 @@ class TestSolidPrimitives(unittest.TestCase):
 
     # from documentation
     def test_loft(self):
-        w1 = cm.wire([cm.circle(1.0)])
-        w2 = cm.wire([cm.circle(2.0)])
+        w1 = cm.Wire([cm.circle(1.0)])
+        w2 = cm.Wire([cm.circle(2.0)])
         w2.translate((0.0, 0.0, 5.0))
-        w3 = cm.wire([cm.circle(1.5)])
+        w3 = cm.Wire([cm.circle(1.5)])
         w3.translate((0.0, 0.0, 10.0))
         s1 = cm.loft([w1, w2, w3])
         # empirical
@@ -1212,7 +1212,7 @@ class TestSolidPrimitives(unittest.TestCase):
         profile = cm.ngon(2.0, 6)
         e1 = cm.arc(8.0, 0.0, math.pi / 2)
         e2 = cm.segment((0.0, 8.0, 0.0), (-8.0, 8.0, 0.0))
-        spine = cm.wire([e1, e2])
+        spine = cm.Wire([e1, e2])
         spine.translate((-8.0, 0.0, 0.0))
         spine.rotatex(math.pi / 2)
         s1 = cm.pipe(profile, spine)

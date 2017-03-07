@@ -1,3 +1,6 @@
+# files created by the tests
+tmp.*
+
 # Pycharm
 /.idea
 
