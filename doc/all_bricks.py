@@ -1,3 +1,4 @@
+# coding: utf-8
 
 import ccad.display as cd
 import brick
