@@ -758,7 +758,7 @@ class ViewQt(_QtGui.QWidget):
             print('Error: Unknown hash type', htype)
         if (self.selected_shape.ShapeType == _TopAbs.TopAbs_WIRE and
             htype == 'Edge'):
-            ex = _BRepTools_WireExplorer(selected_shape)  # Ordered this way
+            ex = _BRepTools_WireExplorer(self.selected_shape)  # Ordered this way
         else:
             ex = _TopExp_Explorer(self.selected_shape, ex_type)
         self.hashes = []
