@@ -1,3 +1,7 @@
+# coding: utf-8
+
+r"""Brick modelling"""
+
 import math
 import ccad.model as cm
 

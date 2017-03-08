@@ -1,3 +1,7 @@
+# coding: utf-8
+
+r"""Generation of brick images"""
+
 import math
 import ccad.display as cd
 import brick

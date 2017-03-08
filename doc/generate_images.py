@@ -1,3 +1,5 @@
+# coding: utf-8
+
 """
 Generates the images for ccad documentation.  The screen shots must be
 generated manually.  Do so with:
@@ -8,7 +10,7 @@ where name is the filename.  Convert the image to .png with gimp.
 """
 
 
-import sys
+# import sys
 import math
 
 import ccad.model as cm
@@ -68,7 +70,7 @@ def _cube_sub(cube, sub, name):
     edges = cube.subshapes('edge')
     for edge in edges:
         v.display(edge, (0.0, 0.0, 0.0))
-    if sub != None:
+    if sub is not None:
         v.display(sub, (1.0, 0.0, 0.0), line_width=3.0)
     v.fit()
     v.save(name)
@@ -77,14 +79,14 @@ def _cube_sub(cube, sub, name):
 
 def cube_solid():
     s1 = cm.box(1.0, 1.0, 1.0)
-    #_cube_subs(s1, [], 'cube_solid.png')
+    # _cube_subs(s1, [], 'cube_solid.png')
     _cube_sub(s1, None, 'cube_solid.png')
 
 
 def cube_face():
     s1 = cm.box(1.0, 1.0, 1.0)
     subs = s1.subshapes('face')
-    #_cube_subs(s1, subs, 'cube_face.png')
+    # _cube_subs(s1, subs, 'cube_face.png')
     _cube_sub(s1,
               subs[s1.nearest('face', [(1.0, 0.5, 0.5)])[0]],
               'cube_face.png')
@@ -95,14 +97,14 @@ def cube_wire():
     faces = s1.subshapes('face')
     face = faces[s1.nearest('face', [(1.0, 0.5, 0.5)])[0]]
     w1 = face.subshapes('wire')[0]
-    #_cube_subs(s1, subs, 'cube_wire.png')
+    # _cube_subs(s1, subs, 'cube_wire.png')
     _cube_sub(s1, w1, 'cube_wire.png')
 
 
 def cube_edge():
     s1 = cm.box(1.0, 1.0, 1.0)
     subs = s1.subshapes('edge')
-    #_cube_subs(s1, subs, 'cube_edge.png')
+    # _cube_subs(s1, subs, 'cube_edge.png')
     _cube_sub(s1,
               subs[s1.nearest('edge', [(1.0, 0.5, 1.0)])[0]],
               'cube_edge.png')
@@ -111,7 +113,7 @@ def cube_edge():
 def cube_vertex():
     s1 = cm.box(1.0, 1.0, 1.0)
     subs = s1.subshapes('vertex')
-    #_cube_subs(s1, subs, 'cube_vertex.png')
+    # _cube_subs(s1, subs, 'cube_vertex.png')
     _cube_sub(s1,
               subs[s1.nearest('vertex', [(1.0, 0.0, 1.0)])[0]],
               'cube_vertex.png')
