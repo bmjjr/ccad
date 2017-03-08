@@ -497,21 +497,21 @@ class ViewQt(_QtGui.QWidget):
         Should do something other than print (popup?) ***
         """
         if self.selected is not None:
-            if self.selection_type == 'vertex':
-                s = _cm.vertex(self.selected)
+            if self.selection_type == 'Vertex':
+                s = _cm.Vertex(self.selected)
                 retval = 'center: ' + str(s.center()) + \
                     '\ntolerance: ' + str(s.tolerance())
-            elif self.selection_type == 'edge':
-                s = _cm.edge(self.selected)
+            elif self.selection_type == 'Edge':
+                s = _cm.Edge(self.selected)
                 retval = 'center: ' + str(s.center()) + \
                     '\nlength: ' + str(s.length()) + \
                     '\ntolerance: ' + str(s.tolerance())
-            elif self.selection_type == 'wire':
-                s = _cm.wire(self.selected)
+            elif self.selection_type == 'Wire':
+                s = _cm.Wire(self.selected)
                 retval = 'center: ' + str(s.center()) + \
                     '\nlength: ' + str(s.length())
-            elif self.selection_type == 'face':
-                s = _cm.face(self.selected)
+            elif self.selection_type == 'Face':
+                s = _cm.Face(self.selected)
                 retval = 'center: ' + str(s.center()) + \
                     '\ntype: ' + str(s.type()) + \
                     '\narea: ' + str(s.area()) + \
@@ -746,18 +746,18 @@ class ViewQt(_QtGui.QWidget):
 
     # Selection Functions
     def _build_hashes(self, htype):
-        if htype == 'face':
+        if htype == 'Face':
             ex_type = _TopAbs.TopAbs_FACE
-        elif htype == 'wire':
+        elif htype == 'Wire':
             ex_type = _TopAbs.TopAbs_WIRE
-        elif htype == 'edge':
+        elif htype == 'Edge':
             ex_type = _TopAbs.TopAbs_EDGE
-        elif htype == 'vertex':
+        elif htype == 'Vertex':
             ex_type = _TopAbs.TopAbs_VERTEX
         else:
             print('Error: Unknown hash type', htype)
         if (self.selected_shape.ShapeType == _TopAbs.TopAbs_WIRE and
-            htype == 'edge'):
+            htype == 'Edge'):
             ex = _BRepTools_WireExplorer(selected_shape)  # Ordered this way
         else:
             ex = _TopExp_Explorer(self.selected_shape, ex_type)
@@ -770,17 +770,17 @@ class ViewQt(_QtGui.QWidget):
             if s1_hash not in self.hashes:
                 self.hashes.append(s1_hash)
                 # Calculate position
-                if htype == 'face':
-                    f = _cm.face(s1)
+                if htype == 'Face':
+                    f = _cm.Face(s1)
                     c = (' type ' + f.type(), f.center())
-                elif htype == 'wire':
-                    w = _cm.wire(s1)
+                elif htype == 'Wire':
+                    w = _cm.Wire(s1)
                     c = ('', w.center())
-                elif htype == 'edge':
-                    e = _cm.edge(s1)
+                elif htype == 'Edge':
+                    e = _cm.Edge(s1)
                     c = ('', e.center())
-                elif htype == 'vertex':
-                    c = ('', _cm.vertex(s1).center())
+                elif htype == 'Vertex':
+                    c = ('', _cm.Vertex(s1).center())
                 self.positions.append(c)
             ex.Next()
 
@@ -815,8 +815,8 @@ class ViewQt(_QtGui.QWidget):
         self.glarea.occ_context.CloseAllContexts()
         self.glarea.occ_context.OpenLocalContext()
         self.glarea.occ_context.ActivateStandardMode(_TopAbs.TopAbs_VERTEX)
-        self._build_hashes('vertex')
-        self.selection_type = 'vertex'
+        self._build_hashes('Vertex')
+        self.selection_type = 'Vertex'
         self.setCursor(self.REGULAR_CURSOR)
 
     def select_edge(self, event=None):
@@ -827,8 +827,8 @@ class ViewQt(_QtGui.QWidget):
         self.glarea.occ_context.CloseAllContexts()
         self.glarea.occ_context.OpenLocalContext()
         self.glarea.occ_context.ActivateStandardMode(_TopAbs.TopAbs_EDGE)
-        self._build_hashes('edge')
-        self.selection_type = 'edge'
+        self._build_hashes('Edge')
+        self.selection_type = 'Edge'
         self.setCursor(self.REGULAR_CURSOR)
 
     def select_wire(self, event=None):
@@ -839,8 +839,8 @@ class ViewQt(_QtGui.QWidget):
         self.glarea.occ_context.CloseAllContexts()
         self.glarea.occ_context.OpenLocalContext()
         self.glarea.occ_context.ActivateStandardMode(_TopAbs.TopAbs_WIRE)
-        self._build_hashes('wire')
-        self.selection_type = 'wire'
+        self._build_hashes('Wire')
+        self.selection_type = 'Wire'
         self.setCursor(self.REGULAR_CURSOR)
 
     def select_face(self, event=None):
@@ -851,8 +851,8 @@ class ViewQt(_QtGui.QWidget):
         self.glarea.occ_context.CloseAllContexts()
         self.glarea.occ_context.OpenLocalContext()
         self.glarea.occ_context.ActivateStandardMode(_TopAbs.TopAbs_FACE)
-        self._build_hashes('face')
-        self.selection_type = 'face'
+        self._build_hashes('Face')
+        self.selection_type = 'Face'
         self.setCursor(self.REGULAR_CURSOR)
 
     def select_shape(self, event=None):
