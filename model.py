@@ -2064,10 +2064,10 @@ class Shape(object):
                     suffix = ' tolerance: %.4e' % s.tolerance()
                 else:
                     suffix = ''
-                print('.' * _level + '%s%d location: (%.6f,%.6f,%.6f)%s' % \
-                    (t, count, x, y, z, suffix))
+                print('.' * _level + '%s%d location: (%.6f,%.6f,%.6f)%s' %
+                     (t, count, x, y, z, suffix))
                 if not flat:
-                    s.dump(False, level + 1)
+                    s.dump(False, _level + 1)
 
     def nearest(self, stype, positions, eps=1e-12):
         """
