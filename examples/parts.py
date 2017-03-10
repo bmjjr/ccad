@@ -4,7 +4,9 @@
 r"""Miscellaneous parts
 
 This example shows how to inherit a Part class and reuse
-its geometry property to create another geometry
+its geometry property to create another geometry.
+
+Created as a learning exercise when learning ccad (G. Florent)
 
 """
 
