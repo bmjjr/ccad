@@ -1,3 +1,7 @@
+# coding: utf-8
+
+r"""Display a sphere and a a box"""
+
 import ccad.model as cm
 import ccad.display as cd
 
