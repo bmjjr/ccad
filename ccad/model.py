@@ -452,8 +452,7 @@ def scaledz(s1, sfz):
     return s2
 
 
-# TODO : reversed is a Python builtin
-def reversed(s1):
+def reversed_(s1):
     r"""Reverse the orientation
 
     Parameters
@@ -3654,8 +3653,7 @@ def filling(w1, **options):
     return Face(b.Shape())
 
 
-# TODO : replace the use of a builtin
-def slice(s1, x=None, y=None, z=None):
+def slice_(s1, x=None, y=None, z=None):
     """
     Returns a slice of solid s1.  A slice is a list of faces derived
     from a plane cutting through s1.
@@ -3669,8 +3667,8 @@ def slice(s1, x=None, y=None, z=None):
     ----------
     s1 : Solid
     x : float or Face, optional (default is None)
-    x : float, optional (default is None)
-    x : float, optional (default is None)
+    y : float, optional (default is None)
+    z : float, optional (default is None)
 
     Returns
     -------
