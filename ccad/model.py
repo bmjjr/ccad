@@ -1574,12 +1574,15 @@ class Assembly(object):
     Parameters
     ----------
     shape
+    origin : str
+        The file or script the assembly was created from
 
     """
-    def __init__(self, shape):
+    def __init__(self, shape, origin=None):
         self.shape = shape
         self.G = nx.DiGraph()
         self.G.pos = dict()
+        self.origin = origin
 
         shells = self.shape.subshapes("Shell")
         logger.info("%i shells in assembly" % len(shells))
@@ -1618,10 +1621,8 @@ class Assembly(object):
         filename : str
 
         """
-        # TODO : if the assembly is created from a file,
-        # the directory should be remembered
         solid = from_step(filename)
-        return cls(solid)
+        return cls(solid, origin=filename)
 
     def tag_nodes(self):
         r"""Add computed data to each node f the assembly"""
@@ -1633,9 +1634,19 @@ class Assembly(object):
             self.G.node[k]['q'] = q
 
     def write_components(self):
-        r"""Write components of the assembly to their own step files"""
-        # TODO : write in a subfolder of the original step file
-        # directory if possible
+        r"""Write components of the assembly to their own step files in a
+        subdirectory of the folder containing the original file"""
+        if os.path.isfile(self.origin):
+            directory = os.path.dirname(self.origin)
+            basename = os.path.basename(self.origin)
+            subdirectory = os.path.join(directory,
+                                        os.path.splitext(basename)[0])
+            if not os.path.isdir(subdirectory):
+                os.mkdir(subdirectory)
+        else:
+            msg = "The components of the assembly should already exist"
+            raise ValueError(msg)
+
         for k in self.G.node:
             sig, V, ptm, q, vec, ang = signature(self.G.node[k]['pcloud'])
             shp = self.G.node[k]['shape']
@@ -1643,6 +1654,7 @@ class Assembly(object):
             if not os.path.isfile(filename):
                 shp.translate(-ptm)
                 shp.rotate(np.array([0, 0, 0]), vec, ang)
+                filename = os.path.join(subdirectory, filename)
                 shp.to_step(filename)
 
     def __repr__(self):
