@@ -1005,14 +1005,13 @@ def glue(s1, s2, face_pairs=[]):
         # BRepTools_UVBounds as a pre-filter.  I may also want to try
         # Bounds first. ***
 
-        # TODO: investigate the unreachable code
-        for i1, f1 in enumerate(s1f):
-            for i2, f2 in enumerate(s2f):
-                b = _TopOpeBRep_FacesIntersector()
-                b.Perform(f1, f2)
-                if b.SurfacesSameOriented():
-                    face_pairs.append((i1, i2))
-        print(face_pairs)
+        # for i1, f1 in enumerate(s1f):
+        #     for i2, f2 in enumerate(s2f):
+        #         b = _TopOpeBRep_FacesIntersector()
+        #         b.Perform(f1, f2)
+        #         if b.SurfacesSameOriented():
+        #             face_pairs.append((i1, i2))
+        # print(face_pairs)
 
     b = _BRepFeat_Gluer(s1.shape, s2.shape)
     for face_pair in face_pairs:
@@ -2122,6 +2121,12 @@ class Shape(object):
 
         It currently returns a box which extends far beyond the real
         boundaries.  It seems to be an OCC problem, but uncertain ***
+
+        Returns
+        -------
+        tuple[float, float, float, float, float, float]
+            The bounding box coordinates
+
         """
         b1 = _Bnd_Box()
         _brepbndlib_Add(self.shape, b1)
