@@ -1547,14 +1547,25 @@ def signature(point_cloud):
         ang
 
     """
+    logger.debug("**** Call to signature() ****")
     pts = np.vstack((point_cloud[0, :], point_cloud[1, :], point_cloud[2, :])).T
+    logger.debug("Shape of pts : %s" % str(pts.shape))
     ptm = np.mean(pts, axis=0)
+    logger.debug("Mean pt : %s" % str(ptm))
     ptsm = pts - ptm
+    logger.debug("Shape of ptsm : %s" % str(ptsm.shape))  # should be as pts
     U, S, V = np.linalg.svd(ptsm)
+    logger.debug("U shape : %s" % str(U.shape))  # rotation matrix (nb_pts x nb_pts)
+    logger.debug("S shape : %s" % str(S.shape))  # Diagonal matrix (3d vec)
+    logger.debug(str(S))
+    logger.debug("V shape : %s" % str(V.shape))  # rotation matrix (3x3)
+    logger.debug(str(V))
 
     q = cq.Quaternion()
     q.from_mat(V)
     vec, ang = q.vecang()
+    logger.debug("Vec : %s" % str(vec))
+    logger.debug("Ang : %f" % ang)
 
     S0 = str(int(np.ceil(S[0])))
     S1 = str(int(np.ceil(S[1])))
@@ -1574,9 +1585,12 @@ class Assembly(object):
     shape
     origin : str
         The file or script the assembly was created from
+    direct : bool, optional(default is False)
+        If True, directly use the point cloud of the Shell
+        If False, iterate the faces, wires and then vertices
 
     """
-    def __init__(self, shape, origin=None):
+    def __init__(self, shape, origin=None, direct=False):
         self.shape = shape
         self.G = nx.DiGraph()
         self.G.pos = dict()
@@ -1585,33 +1599,41 @@ class Assembly(object):
         shells = self.shape.subshapes("Shell")
         logger.info("%i shells in assembly" % len(shells))
 
-        # TODO : going straight to the vertices might do
         for k, shell in enumerate(shells):
+            logger.info("Dealing with shell nb %i" % k)
             self.G.pos[k] = shell.center()
             pcloud = np.array([[]])
             pcloud.shape = (3, 0)
-            faces = shell.subshapes("Face")
 
-            for face in faces:
-                face_type = face.type()
-                wires = face.subshapes("Wire")
+            if direct:
+                vertices = shell.subshapes("Vertex")
+                logger.info("%i vertices found for direct method")
+                for vertex in vertices:
+                    point = np.array(vertex.center())[:, None]
+                    pcloud = np.append(pcloud, point, axis=1)
+            else:
+                faces = shell.subshapes("Face")
 
-                for wire in wires:
-                    vertices = wire.subshapes("Vertex")
+                for face in faces:
+                    face_type = face.type()
+                    wires = face.subshapes("Wire")
 
-                    for vertex in vertices:
-                        point = np.array(vertex.center())[:, None]
-                        pcloud = np.append(pcloud, point, axis=1)
+                    for wire in wires:
+                        vertices = wire.subshapes("Vertex")
 
-                if face_type == "plane":
-                    pass
-                if face_type == "cylinder":
-                    pass
+                        for vertex in vertices:
+                            point = np.array(vertex.center())[:, None]
+                            pcloud = np.append(pcloud, point, axis=1)
+
+                    if face_type == "plane":
+                        pass
+                    if face_type == "cylinder":
+                        pass
 
             self.G.add_node(k, pcloud=pcloud, shape=shell)
 
     @classmethod
-    def from_step(cls, filename):
+    def from_step(cls, filename, direct=False):
         r"""Create an Assembly instance from a STEP file
 
         Parameters
@@ -1620,7 +1642,7 @@ class Assembly(object):
 
         """
         solid = from_step(filename)
-        return cls(solid, origin=filename)
+        return cls(solid, origin=filename, direct=direct)
 
     def tag_nodes(self):
         r"""Add computed data to each node f the assembly"""
@@ -3671,7 +3693,6 @@ def slice_(s1, x=None, y=None, z=None):
     if isinstance(x, Face):
         p1 = x
     else:
-        # TODO: bounds() returns nothing, really?
         xmin, ymin, zmin, xmax, ymax, zmax = s1.bounds()
         if x:
             w1 = polygon([(x, ymin, zmin),

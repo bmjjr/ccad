@@ -25,7 +25,7 @@ def reverse_engineering_with_ccad(step_filename, view=False):
         Launch the ccad viewer?
 
     """
-    assembly = cm.Assembly.from_step(step_filename)
+    assembly = cm.Assembly.from_step(step_filename, direct=False)
     assembly.write_components()
     assembly.tag_nodes()
 
