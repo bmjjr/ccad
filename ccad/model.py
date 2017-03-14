@@ -1110,7 +1110,8 @@ def _convert_import(s):
         logger.error(msg)
         # print('Error: Unsupported type', stype)
     else:
-        return eval(stype + '(s)')
+        # return eval(stype + '(s)')
+        return globals()[stype](s)
 
 
 def from_brep(name):
@@ -2095,15 +2096,13 @@ class Shape(object):
 
         Returns
         -------
+        list[Shape of subclass of Shape]
 
         """
-        retval = []
+        retval = list()
         if self._valid_subshape(stype):
-            raw_shapes = self._raw(stype)
-            # for raw_shape in raw_shapes:
-            # TODO : using eval with the iterating var is too original !! -> find another way
-            for raw_shape in raw_shapes:
-                retval.append(eval(stype + '(raw_shape)'))
+            retval = [globals()[stype](raw_shape)
+                      for raw_shape in self._raw(stype)]
         return retval
 
     def copy(self):
@@ -2111,7 +2110,8 @@ class Shape(object):
         Copies the shape and returns the copied shape
         """
         s = _BRepBuilderAPI.BRepBuilderAPI_Copy(self.shape).Shape()
-        return eval(self.stype + '(s)')
+        # return eval(self.stype + '(s)')
+        return globals()[self.stype](s)
 
     def bounds(self):
         """
@@ -2150,12 +2150,9 @@ class Shape(object):
         stype
 
         """
-        centers = []
+        centers = list()
         if self._valid_subshape(stype):
-            ss = self._raw(stype)
-            for s in ss:
-                sshape = eval(stype + '(s)')
-                centers.append(sshape.center())
+            centers = [globals()[stype](s).center() for s in self._raw(stype)]
         return centers
 
     def check(self):
