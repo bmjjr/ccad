@@ -2765,15 +2765,7 @@ class Shell(Shape):
         float : the area of the shell
 
         """
-        subs = self.subshapes('Face')
-        c = (0.0, 0.0, 0.0)
-        total_area = 0.0
-        for sub in subs:
-            # TODO : what is the role of the next line?
-            sub_center = sub.center()
-            area = sub.area()
-            total_area = total_area + area
-        return total_area
+        return sum([sub.area() for sub in self.subshapes('Face')])
 
 
 class Solid(Shape):

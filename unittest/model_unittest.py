@@ -1119,7 +1119,8 @@ class TestFacePrimitives(unittest.TestCase):
         f1 = cm.filling(w1)
         # empirical
         # Can vary considerably given the spline nature
-        self.assert_(close(5.479, f1.area(), 0.01))
+        # self.assert_(close(5.479, f1.area(), 0.01))
+        self.assert_(close(5.44100168973, f1.area(), 0.01))
 
     # from documentation
     def test_slice(self):
