@@ -279,8 +279,8 @@ def rotatedz(s1, angle):
 
     Parameters
     ----------
-    s1
-    angle
+    s1 : Shape
+    angle : float
 
     Returns
     -------
@@ -1453,9 +1453,8 @@ def from_svg(name):
                         else:
                             theta1 = theta
                             theta2 = theta + dtheta
-                        # TODO: investigate the unresolved references
-                        a = translate(
-                            rotatez(arc_ellipse(rx, ry, theta1, theta2), phi),
+                        a = translated(
+                            rotatedz(arc_ellipse(rx, ry, theta1, theta2), phi),
                             (cx, cy, 0.0))
                         a.bounds()
                         # Transform a
@@ -3272,7 +3271,7 @@ def arc_ellipse(rad1, rad2, start_angle, end_angle):
 
     """
     if rad2 > rad1:
-        print('Error: Major radius ', rad1, \
+        print('Error: Major radius ', rad1,
               ' must be greater than minor radius ', rad2)
         _sys.exit()
     return Edge(_BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
