@@ -26,7 +26,8 @@ from os import path as _path
 import sys as _sys
 import re as _re  # Needed for svg
 import math as _math
-
+from itertools import permutations,combinations
+import pdb
 import networkx as nx
 import numpy as np
 
@@ -1578,7 +1579,7 @@ class Assembly(object):
     """
     def __init__(self, shape):
         self.shape = shape
-        self.G = nx.DiGraph()
+        self.G = nx.Graph()
         self.G.pos = dict()
 
         shells = self.shape.subshapes("Shell")
@@ -1624,13 +1625,25 @@ class Assembly(object):
         return cls(solid)
 
     def tag_nodes(self):
-        r"""Add computed data to each node f the assembly"""
+        r"""Add computed data to each node of the assembly"""
+        self.lsig = [] 
         for k in self.G.node:
             sig, V, ptm, q, vec, ang = signature(self.G.node[k]['pcloud'])
+            self.lsig.append(sig)
             self.G.node[k]['name'] = sig
             self.G.node[k]['R'] = V
             self.G.node[k]['ptm'] = ptm
             self.G.node[k]['q'] = q
+        self.lsig=list(set(self.lsig))
+        self.Nn = len(self.G.node)
+        
+    def same_nodes(self):
+        r"""Link nodes with the same signature """
+        for sig in self.lsig: 
+            lnodes = [ k for k in range(self.Nn) if self.G.node[k]['name']==sig ] 
+            for n1,n2 in combinations(lnodes,2):
+                self.G.add_edge(n1,n2,rel='same')
+
 
     def write_components(self):
         r"""Write components of the assembly to their own step files"""
@@ -1644,6 +1657,20 @@ class Assembly(object):
                 shp.translate(-ptm)
                 shp.rotate(np.array([0, 0, 0]), vec, ang)
                 shp.to_step(filename)
+
+    def show_graph(self,plane='yz'):
+        r""" graph vizualization with networkx """
+        if plane=='xy': 
+            pos = {k:tuple( self.G.node[k]['ptm'][0:2]) for k in range(self.Nn)} 
+        elif plane== 'yz':
+            pos = {k:tuple( self.G.node[k]['ptm'][1:]) for k in range(self.Nn)} 
+        elif plae=='xz':
+            pos = {k:(self.G.node[k]['ptm'][0],self.G[k]['ptm'][2]) for k in range(self.Nn)}
+        labels = {k:self.G.node[k]['name'] for k in range(self.Nn)} 
+
+        nx.draw_networkx_nodes(self.G,pos)
+        nx.draw_networkx_edges(self.G,pos,edgelist=self.G.edges())
+        nx.draw_networkx_labels(self.G,pos,labels=labels)
 
     def __repr__(self):
         st = self.shape.__repr__()+'\n'

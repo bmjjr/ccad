@@ -35,6 +35,7 @@ def reverse_engineering_with_ccad(step_filename, view=False):
             ccad_viewer.display(shell)
         cd.start()
 
+    return(assembly)
 
 def view_topology_with_aocutils(step_filename):
     r"""View the STEP file contents in the aocutils wx viewer.
@@ -73,4 +74,4 @@ if __name__ == "__main__":
     # filename = "step/aube_pleine.stp"  # OCC Solid
 
     # view_topology_with_aocutils(filename)
-    reverse_engineering_with_ccad(filename)
+    myassembly = reverse_engineering_with_ccad(filename)

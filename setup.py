@@ -23,6 +23,7 @@ import glob
 import distutils.core
 import distutils.dir_util
 import distutils.sysconfig
+#from setuptools import setup,find_packages
 
 name = 'ccad'
 version = '0.13'  # Change also in display.py, doc/conf.py
@@ -37,9 +38,12 @@ data_files = [(prefix + 'html', glob.glob('doc/html/*.html')),
 
 # Install the module
 distutils.core.setup(name=name,
-                     version=version,
-                     url='UNKNOWN',
-                     py_modules=['ccad.model', 'ccad.display','ccad.quaternions'],
-                     package_dir={'ccad': 'ccad'},
-                     data_files=data_files,
-                     requires=['OCC', 'PyQt4'])
+#setup(name=name,
+      version=version,
+      url='UNKNOWN',
+      py_modules=['ccad.model', 'ccad.display','ccad.quaternions'],
+      package_dir={'ccad': 'ccad'},
+      data_files=data_files,
+      #install_requires=['OCC', 'PyQt4'],
+      requires=['OCC', 'PyQt4']
+      )

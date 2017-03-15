@@ -43,6 +43,8 @@ except ImportError:
         print("""
 Warning: Cannot find python-qt4 or pyside.  You will not be able to
 use ccad's display.  Instead, you may use pythonocc's viewers.  ccad
+m OCC.Visual3d import Visual3d_ViewOrientation as _Visual3d_ViewOrientation
+ImportError: cannot import name Visual3d_ViewOrientation
 shapes may be displayed in pythonocc's viewers by using the .shape
 attribute.  For example:
 
@@ -65,7 +67,7 @@ from OCC.HLRBRep import (HLRBRep_Algo as _HLRBRep_Algo,
                          HLRBRep_HLRToShape as _HLRBRep_HLRToShape)
 # from OCC.TCollection import (TCollection_ExtendedString as TCollection_ExtendedString)
 from OCC.TopExp import TopExp_Explorer as _TopExp_Explorer
-from OCC.Visual3d import Visual3d_ViewOrientation as _Visual3d_ViewOrientation
+#from OCC.Visual3d import Visual3d_ViewOrientation as _Visual3d_ViewOrientation
 from OCC.Visualization import Display3d as _Display3d
 
 try:
