@@ -29,6 +29,7 @@ import math as _math
 from itertools import permutations,combinations
 import pdb
 import networkx as nx
+import matplotlib.pyplot as plt
 import numpy as np
 
 # from OCC.ChFi3d import *
@@ -1558,14 +1559,15 @@ def signature(point_cloud):
     q = cq.Quaternion()
     q.from_mat(V)
     vec, ang = q.vecang()
-
+    
+    dim =(S[0]*S[1]*S[2])**1/3.
     S0 = str(int(np.ceil(S[0])))
     S1 = str(int(np.ceil(S[1])))
     S2 = str(int(np.ceil(S[2])))
 
     sig = S0 + "_" + S1 + "_" + S2
 
-    return sig, V, ptm, q, vec, ang
+    return sig, V, ptm, q, vec, ang ,dim
 
 
 # Classes
@@ -1628,12 +1630,17 @@ class Assembly(object):
         r"""Add computed data to each node of the assembly"""
         self.lsig = [] 
         for k in self.G.node:
-            sig, V, ptm, q, vec, ang = signature(self.G.node[k]['pcloud'])
-            self.lsig.append(sig)
-            self.G.node[k]['name'] = sig
-            self.G.node[k]['R'] = V
-            self.G.node[k]['ptm'] = ptm
-            self.G.node[k]['q'] = q
+            pcloud = self.G.node[k]['pcloud']
+            if pcloud.shape[0]>3:
+                sig, V, ptm, q, vec, ang ,dim = signature(pcloud)
+                self.lsig.append(sig)
+                self.G.node[k]['name'] = sig
+                self.G.node[k]['R'] = V
+                self.G.node[k]['ptm'] = ptm
+                self.G.node[k]['q'] = q
+                self.G.node[k]['dim'] = dim 
+            else:
+                print(k,pcloud.shape[0])
         self.lsig=list(set(self.lsig))
         self.Nn = len(self.G.node)
         
@@ -1650,16 +1657,19 @@ class Assembly(object):
         # TODO : write in a subfolder of the original step file
         # directory if possible
         for k in self.G.node:
-            sig, V, ptm, q, vec, ang = signature(self.G.node[k]['pcloud'])
-            shp = self.G.node[k]['shape']
-            filename = sig + ".stp"
-            if not os.path.isfile(filename):
-                shp.translate(-ptm)
-                shp.rotate(np.array([0, 0, 0]), vec, ang)
-                shp.to_step(filename)
+            pcloud = self.G.node[k]['pcloud']
+            if pcloud.shape[0]>3:
+                sig, V, ptm, q, vec, ang , dim = signature(pcloud)
+                shp = self.G.node[k]['shape']
+                filename = sig + ".stp"
+                if not os.path.isfile(filename):
+                    shp.translate(-ptm)
+                    shp.rotate(np.array([0, 0, 0]), vec, ang)
+                    shp.to_step(filename)
 
     def show_graph(self,plane='yz'):
         r""" graph vizualization with networkx """
+        plt.ion()
         if plane=='xy': 
             pos = {k:tuple( self.G.node[k]['ptm'][0:2]) for k in range(self.Nn)} 
         elif plane== 'yz':
@@ -1667,10 +1677,14 @@ class Assembly(object):
         elif plae=='xz':
             pos = {k:(self.G.node[k]['ptm'][0],self.G[k]['ptm'][2]) for k in range(self.Nn)}
         labels = {k:self.G.node[k]['name'] for k in range(self.Nn)} 
+        node_size = np.array([ self.G.node[k]['dim'] for k in range(self.Nn) ])
+        node_size = node_size*300/np.max(node_size)
 
-        nx.draw_networkx_nodes(self.G,pos)
+
+        nx.draw_networkx_nodes(self.G,pos,node_size=node_size,linewidth=0)
         nx.draw_networkx_edges(self.G,pos,edgelist=self.G.edges())
         nx.draw_networkx_labels(self.G,pos,labels=labels)
+        plt.show()
 
     def __repr__(self):
         st = self.shape.__repr__()+'\n'
