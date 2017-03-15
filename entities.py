@@ -27,6 +27,7 @@ class entity(object):
            + Contact intersection of two affine lines
            + Symmetry wrt to an affine plane
     """
+
     def __init__(self,s1):
         """ 
         s1 : ccad solid 
@@ -58,6 +59,11 @@ class entity(object):
                     pass       
             self.G.add_node(k,entities=lentities,shape=sh)
 
+    def __repr__(self):
+        st = self.solid.__repr__()+'\n'
+        st = self.G.__repr__()+'\n'
+        return(st)
+        
 #    def analyze(self):
 #        """ solid analysis
 #
