@@ -1631,7 +1631,7 @@ class Assembly(object):
         self.lsig = [] 
         for k in self.G.node:
             pcloud = self.G.node[k]['pcloud']
-            if pcloud.shape[0]>3:
+            if pcloud.shape[1]>3:
                 sig, V, ptm, q, vec, ang ,dim = signature(pcloud)
                 self.lsig.append(sig)
                 self.G.node[k]['name'] = sig
@@ -1640,7 +1640,7 @@ class Assembly(object):
                 self.G.node[k]['q'] = q
                 self.G.node[k]['dim'] = dim 
             else:
-                print(k,pcloud.shape[0])
+                print(k,pcloud.shape)
         self.lsig=list(set(self.lsig))
         self.Nn = len(self.G.node)
         
