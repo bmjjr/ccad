@@ -349,7 +349,7 @@ def derived_slice():
     c1 = cm.cylinder(2.5, 20.0)
     c1.translate((0.0, 0.0, -5.0))
     s1 = b1 - c1
-    f1 = cm.slice(s1, z=1.0)[0]
+    f1 = cm.slice_(s1, z=1.0)[0]
     v.viewstandard(viewtype='top')
     v.display(f1)
     v.fit()

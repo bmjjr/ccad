@@ -98,3 +98,5 @@ ENV/
 
 # Rope project settings
 .ropeproject
+/examples/step/ASM0001_ASM_1_ASM_directisfalse/
+/examples/step/ASM0001_ASM_1_ASM_directistrue/

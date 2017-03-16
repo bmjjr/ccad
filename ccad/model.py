@@ -28,6 +28,9 @@ import re as _re  # Needed for svg
 import math as _math
 from itertools import permutations,combinations
 import pdb
+import urllib
+import imp
+
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
@@ -98,6 +101,7 @@ from OCC.TopOpeBRep import (TopOpeBRep_FacesIntersector as
 from OCC.TopOpeBRepTool import (TopOpeBRepTool_FuseEdges as
                                 _TopOpeBRepTool_FuseEdges)
 from OCC import TopTools as _TopTools
+import OCC.Display.SimpleGui as SimpleGui
 
 import ccad.quaternions as cq
 
@@ -281,8 +285,8 @@ def rotatedz(s1, angle):
 
     Parameters
     ----------
-    s1
-    angle
+    s1 : Shape
+    angle : float
 
     Returns
     -------
@@ -454,8 +458,7 @@ def scaledz(s1, sfz):
     return s2
 
 
-# TODO : reversed is a Python builtin
-def reversed(s1):
+def reversed_(s1):
     r"""Reverse the orientation
 
     Parameters
@@ -1008,14 +1011,13 @@ def glue(s1, s2, face_pairs=[]):
         # BRepTools_UVBounds as a pre-filter.  I may also want to try
         # Bounds first. ***
 
-        # TODO: investigate the unreachable code
-        for i1, f1 in enumerate(s1f):
-            for i2, f2 in enumerate(s2f):
-                b = _TopOpeBRep_FacesIntersector()
-                b.Perform(f1, f2)
-                if b.SurfacesSameOriented():
-                    face_pairs.append((i1, i2))
-        print(face_pairs)
+        # for i1, f1 in enumerate(s1f):
+        #     for i2, f2 in enumerate(s2f):
+        #         b = _TopOpeBRep_FacesIntersector()
+        #         b.Perform(f1, f2)
+        #         if b.SurfacesSameOriented():
+        #             face_pairs.append((i1, i2))
+        # print(face_pairs)
 
     b = _BRepFeat_Gluer(s1.shape, s2.shape)
     for face_pair in face_pairs:
@@ -1114,7 +1116,8 @@ def _convert_import(s):
         logger.error(msg)
         # print('Error: Unsupported type', stype)
     else:
-        return eval(stype + '(s)')
+        # return eval(stype + '(s)')
+        return globals()[stype](s)
 
 
 def from_brep(name):
@@ -1457,9 +1460,8 @@ def from_svg(name):
                         else:
                             theta1 = theta
                             theta2 = theta + dtheta
-                        # TODO: investigate the unresolved references
-                        a = translate(
-                            rotatez(arc_ellipse(rx, ry, theta1, theta2), phi),
+                        a = translated(
+                            rotatedz(arc_ellipse(rx, ry, theta1, theta2), phi),
                             (cx, cy, 0.0))
                         a.bounds()
                         # Transform a
@@ -1551,16 +1553,27 @@ def signature(point_cloud):
         ang
 
     """
+    logger.debug("**** Call to signature() ****")
     pts = np.vstack((point_cloud[0, :], point_cloud[1, :], point_cloud[2, :])).T
+    logger.debug("Shape of pts : %s" % str(pts.shape))
     ptm = np.mean(pts, axis=0)
+    logger.debug("Mean pt : %s" % str(ptm))
     ptsm = pts - ptm
+    logger.debug("Shape of ptsm : %s" % str(ptsm.shape))  # should be as pts
     U, S, V = np.linalg.svd(ptsm)
+    logger.debug("U shape : %s" % str(U.shape))  # rotation matrix (nb_pts x nb_pts)
+    logger.debug("S shape : %s" % str(S.shape))  # Diagonal matrix (3d vec)
+    logger.debug(str(S))
+    logger.debug("V shape : %s" % str(V.shape))  # rotation matrix (3x3)
+    logger.debug(str(V))
 
     q = cq.Quaternion()
     q.from_mat(V)
     vec, ang = q.vecang()
-    
     dim =(S[0]*S[1]*S[2])**1/3.
+    logger.debug("Vec : %s" % str(vec))
+    logger.debug("Ang : %f" % ang)
+
     S0 = str(int(np.ceil(S[0])))
     S1 = str(int(np.ceil(S[1])))
     S2 = str(int(np.ceil(S[2])))
@@ -1571,60 +1584,203 @@ def signature(point_cloud):
 
 
 # Classes
+class Part(object):
+    r"""Part class
+
+    Notes
+    -----
+    A Part could be n solids : e.g. a bearing has two rings and n balls
+
+    """
+
+    def __init__(self, geometry, origin):
+        self._geometry = geometry
+        self.origin = origin
+
+    @classmethod
+    def from_step(cls, step_filename):
+        r"""Create a Part instance from a STEP file
+
+        Parameters
+        ----------
+        step_filename : str
+            Path to the STEP file
+
+        Returns
+        -------
+        Part : a new Part object created from the STEP file
+
+        Raises
+        ------
+        IOError : if the STEP file cannot be found
+
+        """
+        # if not os.path.isfile(step_filename):
+        #     msg = "STEP part file does not exist"
+        #     logger.error(msg)
+        #     raise IOError(msg)
+        # TODO : make sure is it not a compound or a compsolid
+        #      : actually, why not? e.g. bearing
+        solid = from_step(step_filename)
+        return cls(solid, origin=step_filename)
+
+    @classmethod
+    def from_py(cls, py_filename):
+        r"""Create a Part instance from a Python file
+
+        Parameters
+        ----------
+        py_filename : str
+            Path to the Python generator module
+            that has a 'part' variable in its global namespace
+
+        Returns
+        -------
+        Part : a new Part object created from the library
+
+        Raises
+        ------
+        IOError : if the Python generator module cannot be found
+        ValueError : if the Python generator does not have a 'part' variable
+                     in its global namespace
+
+        """
+        # if not os.path.isfile(py_filename):
+        #     msg = "Python part file does not exist"
+        #     logger.error(msg)
+        #     raise IOError(msg)
+
+        # TODO : PY3 versions (imp is not PY3 compliant)
+        module = imp.load_source(os.path.splitext(py_filename)[0], py_filename)
+        if not hasattr(module, 'part'):
+            raise ValueError("The Python module should have a 'part' variable")
+        solid = module.part
+        return cls(solid, origin=py_filename)
+
+    @classmethod
+    def from_library(cls, url, name):
+        r"""
+
+        Parameters
+        ----------
+        url : str
+            The library url
+        name : str
+            The name of the part in the library
+
+        Returns
+        -------
+        Part : a new Part object created from the library
+
+        Raises
+        ------
+        IOError : if the url of the library is wrong
+        SyntaxError : if the name of the part does not exist
+
+        """
+        response = urllib.urlopen("%s/%s.py" % (url, name))
+        with open("tmp.py", "w") as tmp_py_file:
+            for line in response.readlines():
+                tmp_py_file.write(line)
+        # TODO : PY3 versions (imp is not PY3 compliant)
+        module = imp.load_source(name, "tmp.py")
+        solid = module.part
+        logger.debug("solid has type: %s" % type(solid))
+        os.remove("tmp.py")
+        return cls(solid, origin="%s/%s.py" % (url, name))
+
+    @property
+    def geometry(self):
+        r"""Part geometry
+
+        Returns
+        -------
+        Solid
+
+        """
+        return self._geometry
+
+
 class Assembly(object):
     r"""
 
     Parameters
     ----------
     shape
+    origin : str
+        The file or script the assembly was created from
+    direct : bool, optional(default is False)
+        If True, directly use the point cloud of the Shell
+        If False, iterate the faces, wires and then vertices
 
     """
-    def __init__(self, shape):
+    def __init__(self, shape, origin=None, direct=False):
         self.shape = shape
         self.G = nx.Graph()
         self.G.pos = dict()
+        self.origin = origin
 
         shells = self.shape.subshapes("Shell")
         logger.info("%i shells in assembly" % len(shells))
 
-        # TODO : going straight to the vertices might do
         for k, shell in enumerate(shells):
+            logger.info("Dealing with shell nb %i" % k)
             self.G.pos[k] = shell.center()
             pcloud = np.array([[]])
             pcloud.shape = (3, 0)
-            faces = shell.subshapes("Face")
 
-            for face in faces:
-                face_type = face.type()
-                wires = face.subshapes("Wire")
+            if direct:
+                vertices = shell.subshapes("Vertex")
+                logger.info("%i vertices found for direct method")
+                for vertex in vertices:
+                    point = np.array(vertex.center())[:, None]
+                    pcloud = np.append(pcloud, point, axis=1)
+            else:
+                faces = shell.subshapes("Face")
 
-                for wire in wires:
-                    vertices = wire.subshapes("Vertex")
+                for face in faces:
+                    face_type = face.type()
+                    wires = face.subshapes("Wire")
 
-                    for vertex in vertices:
-                        point = np.array(vertex.center())[:, None]
-                        pcloud = np.append(pcloud, point, axis=1)
+                    for wire in wires:
+                        vertices = wire.subshapes("Vertex")
 
-                if face_type == "plane":
-                    pass
-                if face_type == "cylinder":
-                    pass
+                        for vertex in vertices:
+                            point = np.array(vertex.center())[:, None]
+                            pcloud = np.append(pcloud, point, axis=1)
+
+                    if face_type == "plane":
+                        pass
+                    if face_type == "cylinder":
+                        pass
 
             self.G.add_node(k, pcloud=pcloud, shape=shell)
 
     @classmethod
-    def from_step(cls, filename):
+    def from_step(cls, filename, direct=False):
         r"""Create an Assembly instance from a STEP file
 
         Parameters
         ----------
         filename : str
+            Path to the STEP file
+        direct : bool, optional(default is False)
+            If True, directly use the point cloud of the Shell
+            If False, iterate the faces, wires and then vertices
+
+        Returns
+        -------
+        Assembly : the new Assembly object created from a STEP file
 
         """
-        # TODO : if the assembly is created from a file,
-        # the directory should be remembered
         solid = from_step(filename)
-        return cls(solid)
+        return cls(solid, origin=filename, direct=direct)
+
+    def view_node(self,node_index=0):
+        shape = self.G.node[node_index]['shape'] 
+        display, start_display, add_menu, add_function_to_menu = SimpleGui.init_display()
+        display.DisplayShape(shape, update = True)
+        start_display()
 
     def tag_nodes(self):
         r"""Add computed data to each node of the assembly"""
@@ -1653,9 +1809,19 @@ class Assembly(object):
 
 
     def write_components(self):
-        r"""Write components of the assembly to their own step files"""
-        # TODO : write in a subfolder of the original step file
-        # directory if possible
+        r"""Write components of the assembly to their own step files in a
+        subdirectory of the folder containing the original file"""
+        if os.path.isfile(self.origin):
+            directory = os.path.dirname(self.origin)
+            basename = os.path.basename(self.origin)
+            subdirectory = os.path.join(directory,
+                                        os.path.splitext(basename)[0])
+            if not os.path.isdir(subdirectory):
+                os.mkdir(subdirectory)
+        else:
+            msg = "The components of the assembly should already exist"
+            raise ValueError(msg)
+
         for k in self.G.node:
             pcloud = self.G.node[k]['pcloud']
             if pcloud.shape[0]>3:
@@ -1666,9 +1832,19 @@ class Assembly(object):
                     shp.translate(-ptm)
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
                     shp.to_step(filename)
+                    filename = os.path.join(subdirectory, filename)
+                    shp.to_step(filename)
 
     def show_graph(self,plane='yz'):
-        r""" graph vizualization with networkx """
+        r""" networkx graph vizualization 
+        
+        Parameters
+        ----------
+
+        plane : string
+            'xy' | 'yz' | 'xz' 
+        
+        """
         plt.ion()
         if plane=='xy': 
             pos = {k:tuple( self.G.node[k]['ptm'][0:2]) for k in range(self.Nn)} 
@@ -2127,15 +2303,13 @@ class Shape(object):
 
         Returns
         -------
+        list[Shape of subclass of Shape]
 
         """
-        retval = []
+        retval = list()
         if self._valid_subshape(stype):
-            raw_shapes = self._raw(stype)
-            # for raw_shape in raw_shapes:
-            # TODO : using eval with the iterating var is too original !! -> find another way
-            for raw_shape in raw_shapes:
-                retval.append(eval(stype + '(raw_shape)'))
+            retval = [globals()[stype](raw_shape)
+                      for raw_shape in self._raw(stype)]
         return retval
 
     def copy(self):
@@ -2143,7 +2317,8 @@ class Shape(object):
         Copies the shape and returns the copied shape
         """
         s = _BRepBuilderAPI.BRepBuilderAPI_Copy(self.shape).Shape()
-        return eval(self.stype + '(s)')
+        # return eval(self.stype + '(s)')
+        return globals()[self.stype](s)
 
     def bounds(self):
         """
@@ -2152,6 +2327,12 @@ class Shape(object):
 
         It currently returns a box which extends far beyond the real
         boundaries.  It seems to be an OCC problem, but uncertain ***
+
+        Returns
+        -------
+        tuple[float, float, float, float, float, float]
+            The bounding box coordinates
+
         """
         b1 = _Bnd_Box()
         _brepbndlib_Add(self.shape, b1)
@@ -2176,12 +2357,9 @@ class Shape(object):
         stype
 
         """
-        centers = []
+        centers = list()
         if self._valid_subshape(stype):
-            ss = self._raw(stype)
-            for s in ss:
-                sshape = eval(stype + '(s)')
-                centers.append(sshape.center())
+            centers = [globals()[stype](s).center() for s in self._raw(stype)]
         return centers
 
     def check(self):
@@ -2795,15 +2973,7 @@ class Shell(Shape):
         float : the area of the shell
 
         """
-        subs = self.subshapes('Face')
-        c = (0.0, 0.0, 0.0)
-        total_area = 0.0
-        for sub in subs:
-            # TODO : what is the role of the next line?
-            sub_center = sub.center()
-            area = sub.area()
-            total_area = total_area + area
-        return total_area
+        return sum([sub.area() for sub in self.subshapes('Face')])
 
 
 class Solid(Shape):
@@ -3305,7 +3475,7 @@ def arc_ellipse(rad1, rad2, start_angle, end_angle):
 
     """
     if rad2 > rad1:
-        print('Error: Major radius ', rad1, \
+        print('Error: Major radius ', rad1,
               ' must be greater than minor radius ', rad2)
         _sys.exit()
     return Edge(_BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
@@ -3683,8 +3853,7 @@ def filling(w1, **options):
     return Face(b.Shape())
 
 
-# TODO : replace the use of a builtin
-def slice(s1, x=None, y=None, z=None):
+def slice_(s1, x=None, y=None, z=None):
     """
     Returns a slice of solid s1.  A slice is a list of faces derived
     from a plane cutting through s1.
@@ -3698,8 +3867,8 @@ def slice(s1, x=None, y=None, z=None):
     ----------
     s1 : Solid
     x : float or Face, optional (default is None)
-    x : float, optional (default is None)
-    x : float, optional (default is None)
+    y : float, optional (default is None)
+    z : float, optional (default is None)
 
     Returns
     -------
@@ -3709,7 +3878,6 @@ def slice(s1, x=None, y=None, z=None):
     if isinstance(x, Face):
         p1 = x
     else:
-        # TODO: bounds() returns nothing, really?
         xmin, ymin, zmin, xmax, ymax, zmax = s1.bounds()
         if x:
             w1 = polygon([(x, ymin, zmin),

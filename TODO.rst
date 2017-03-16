@@ -1,5 +1,31 @@
-To Do
-=====
+To Do (Guillaume Florent)
+=========================
+
+******** Create a dummy parts library to test instantiation of Part from library
+
+Point .9 of Charles Scharman issues
+
+Move the calculation of geometric signature to the Part object
+
+Merge Part and Assembly
+
+Anchor object
+
+Notion de contact?
+
+Reverse engineering -> rapprochement pièces catalogue?
+
+Automatic relationships detection in reverse engineering
+
+Graph links creation from STEP
+
+Graph links creation from XML/JSON
+
+Nested assemblies
+
+
+To Do (list written by Charles Scharman)
+========================================
 
 1. Allow shells (and 2D curves?) in the boolean operations.
 

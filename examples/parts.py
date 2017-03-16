@@ -10,33 +10,13 @@ Created as a learning exercise when learning ccad (G. Florent)
 
 """
 
-# TODO : the Part class might become a ccad class
-
 from __future__ import division
-
-import abc
 
 import ccad.model as cm
 import ccad.display as cd
 
 
-class Part(object):
-    r"""Abstract Part class"""
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractproperty
-    def geometry(self):
-        r"""Part geometry
-
-        Returns
-        -------
-        Solid
-
-        """
-        return None
-
-
-class Tube(Part):
+class Tube(cm.Part):
     r"""A simple tube
 
     Parameters
@@ -167,7 +147,7 @@ class TubeWithTwoTails(Tube):
 
         # Create the tube
         # TODO : why not use Tube
-        tube = cm.cylinder(self.outer_diameter / 2, self.length) -\
+        tube_ = cm.cylinder(self.outer_diameter / 2, self.length) -\
             cm.cylinder(self.inner_diameter / 2, self.length)
 
         # Remove the part of the tails that are inside the tube
@@ -175,14 +155,14 @@ class TubeWithTwoTails(Tube):
             cm.cylinder(self.inner_diameter / 2, self.length)
 
         # Fuse the tube and the tails
-        union = tube + trimmed_tails
+        union = tube_ + trimmed_tails
         union.fillet(0.5, [10, 37])
         union.fillet(2.5, [21, 47])
 
         return union
 
 
-class TubeWithGuide(Part):
+class TubeWithGuide(cm.Part):
     r"""A (big) tube joined to an external and parallel other tube
 
     Parameters
@@ -238,7 +218,7 @@ class TubeWithGuide(Part):
             cm.cylinder(self.inner_diameter / 2, self.length) - small_hole
 
 
-class TubeEnd(Part):
+class TubeEnd(cm.Part):
     r"""A part to finish a tube, aka a tube cap
 
     Parameters
@@ -395,9 +375,9 @@ if __name__ == "__main__":
     v1 = cd.view()
     te = TubeEnd(big_diameter=10., small_diameter=8., small_diameter_length=20.,
                  big_diameter_length=10.).geometry
-    tewh= TubeEndWithHole(big_diameter=10., small_diameter=8.,
-                          small_diameter_length=20., big_diameter_length=10.,
-                          hole_diameter=2.).geometry
+    tewh = TubeEndWithHole(big_diameter=10., small_diameter=8.,
+                           small_diameter_length=20., big_diameter_length=10.,
+                           hole_diameter=2.).geometry
     tube = Tube(outer_diameter=10, inner_diameter=8, length=2).geometry
     tube_with_tail = TubeWithTail(outer_diameter=10, inner_diameter=8, length=2,
                                   tail_length=30., tail_thickness=2.,
