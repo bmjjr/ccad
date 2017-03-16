@@ -26,6 +26,8 @@ from os import path as _path
 import sys as _sys
 import re as _re  # Needed for svg
 import math as _math
+import urllib
+import imp
 
 import networkx as nx
 import numpy as np
@@ -1577,6 +1579,123 @@ def signature(point_cloud):
 
 
 # Classes
+class Part(object):
+    r"""Part class
+
+    Notes
+    -----
+    A Part could be n solids : e.g. a bearing has two rings and n balls
+
+    """
+
+    def __init__(self, geometry, origin):
+        self._geometry = geometry
+        self.origin = origin
+
+    @classmethod
+    def from_step(cls, step_filename):
+        r"""Create a Part instance from a STEP file
+
+        Parameters
+        ----------
+        step_filename : str
+            Path to the STEP file
+
+        Returns
+        -------
+        Part : a new Part object created from the STEP file
+
+        Raises
+        ------
+        IOError : if the STEP file cannot be found
+
+        """
+        # if not os.path.isfile(step_filename):
+        #     msg = "STEP part file does not exist"
+        #     logger.error(msg)
+        #     raise IOError(msg)
+        # TODO : make sure is it not a compound or a compsolid
+        #      : actually, why not? e.g. bearing
+        solid = from_step(step_filename)
+        return cls(solid, origin=step_filename)
+
+    @classmethod
+    def from_py(cls, py_filename):
+        r"""Create a Part instance from a Python file
+
+        Parameters
+        ----------
+        py_filename : str
+            Path to the Python generator module
+            that has a 'part' variable in its global namespace
+
+        Returns
+        -------
+        Part : a new Part object created from the library
+
+        Raises
+        ------
+        IOError : if the Python generator module cannot be found
+        ValueError : if the Python generator does not have a 'part' variable
+                     in its global namespace
+
+        """
+        # if not os.path.isfile(py_filename):
+        #     msg = "Python part file does not exist"
+        #     logger.error(msg)
+        #     raise IOError(msg)
+
+        # TODO : PY3 versions (imp is not PY3 compliant)
+        module = imp.load_source(os.path.splitext(py_filename)[0], py_filename)
+        if not hasattr(module, 'part'):
+            raise ValueError("The Python module should have a 'part' variable")
+        solid = module.part
+        return cls(solid, origin=py_filename)
+
+    @classmethod
+    def from_library(cls, url, name):
+        r"""
+
+        Parameters
+        ----------
+        url : str
+            The library url
+        name : str
+            The name of the part in the library
+
+        Returns
+        -------
+        Part : a new Part object created from the library
+
+        Raises
+        ------
+        IOError : if the url of the library is wrong
+        SyntaxError : if the name of the part does not exist
+
+        """
+        response = urllib.urlopen("%s/%s.py" % (url, name))
+        with open("tmp.py", "w") as tmp_py_file:
+            for line in response.readlines():
+                tmp_py_file.write(line)
+        # TODO : PY3 versions (imp is not PY3 compliant)
+        module = imp.load_source(name, "tmp.py")
+        solid = module.part
+        logger.debug("solid has type: %s" % type(solid))
+        os.remove("tmp.py")
+        return cls(solid, origin="%s/%s.py" % (url, name))
+
+    @property
+    def geometry(self):
+        r"""Part geometry
+
+        Returns
+        -------
+        Solid
+
+        """
+        return self._geometry
+
+
 class Assembly(object):
     r"""
 
@@ -1639,6 +1758,14 @@ class Assembly(object):
         Parameters
         ----------
         filename : str
+            Path to the STEP file
+        direct : bool, optional(default is False)
+            If True, directly use the point cloud of the Shell
+            If False, iterate the faces, wires and then vertices
+
+        Returns
+        -------
+        Assembly : the new Assembly object created from a STEP file
 
         """
         solid = from_step(filename)

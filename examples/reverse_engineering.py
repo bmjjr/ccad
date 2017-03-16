@@ -9,7 +9,6 @@ import logging
 import ccad.model as cm
 import ccad.display as cd
 
-
 from aocxchange.step import StepImporter
 from aocutils.display.wx_viewer import Wx3dViewer
 
