@@ -1731,7 +1731,7 @@ class Assembly(object):
 
             if direct:
                 vertices = shell.subshapes("Vertex")
-                logger.info("%i vertices found for direct method")
+                logger.info("%i vertices found for direct method" % len(vertices) )
                 for vertex in vertices:
                     point = np.array(vertex.center())[:, None]
                     pcloud = np.append(pcloud, point, axis=1)

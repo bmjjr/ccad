@@ -11,9 +11,10 @@ import ccad.display as cd
 
 from aocxchange.step import StepImporter
 from aocutils.display.wx_viewer import Wx3dViewer
+import OCC.Display.SimpleGui as SimpleGui
 
 
-def reverse_engineering_with_ccad(step_filename, view=False):
+def reverse_engineering_with_ccad(step_filename, view=False ,direct = False):
     r"""Reverse engineering using ccad
 
     Parameters
@@ -24,7 +25,7 @@ def reverse_engineering_with_ccad(step_filename, view=False):
         Launch the ccad viewer?
 
     """
-    assembly = cm.Assembly.from_step(step_filename, direct=False)
+    assembly = cm.Assembly.from_step(step_filename, direct= direct)
     assembly.write_components()
     assembly.tag_nodes()
 
@@ -64,6 +65,11 @@ def view_topology_with_aocutils(step_filename):
     app.SetTopWindow(frame)
     app.MainLoop()
 
+def view(model):
+    display, start_display, add_menu, add_function_to_menu = SimpleGui.init_display()
+    display.DisplayShape(model.shape, update = True)
+    start_display()
+#
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s :: %(levelname)6s :: '
@@ -73,4 +79,4 @@ if __name__ == "__main__":
     # filename = "step/aube_pleine.stp"  # OCC Solid
 
     # view_topology_with_aocutils(filename)
-    x = reverse_engineering_with_ccad(filename,view=True)
+    x = reverse_engineering_with_ccad(filename,view=True,direct=True)
