@@ -1722,10 +1722,9 @@ class Assembly(object):
 
         shells = self.shape.subshapes("Shell")
         logger.info("%i shells in assembly" % len(shells))
-
+        inode=0
         for k, shell in enumerate(shells):
             logger.info("Dealing with shell nb %i" % k)
-            self.G.pos[k] = shell.center()
             pcloud = np.array([[]])
             pcloud.shape = (3, 0)
 
@@ -1754,7 +1753,10 @@ class Assembly(object):
                     if face_type == "cylinder":
                         pass
 
-            self.G.add_node(k, pcloud=pcloud, shape=shell)
+            if len(vertices)>3:
+                self.G.pos[inode] = shell.center()
+                self.G.add_node(inode, pcloud=pcloud, shape=shell)
+                inode +=1
 
     @classmethod
     def from_step(cls, filename, direct=False):
@@ -1857,7 +1859,8 @@ class Assembly(object):
         node_size = node_size*300/np.max(node_size)
 
 
-        nx.draw_networkx_nodes(self.G,pos,node_size=node_size,linewidth=0)
+        #nx.draw_networkx_nodes(self.G,pos,node_size=node_size,linewidth=0)
+        nx.draw_networkx_nodes(self.G,pos,node_size=100,linewidth=0)
         nx.draw_networkx_edges(self.G,pos,edgelist=self.G.edges())
         nx.draw_networkx_labels(self.G,pos,labels=labels)
         plt.show()
