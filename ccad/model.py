@@ -1826,7 +1826,7 @@ class Assembly(object):
 
         for k in self.G.node:
             pcloud = self.G.node[k]['pcloud']
-            if pcloud.shape[0]>3:
+            if pcloud.shape[1]>3:
                 sig, V, ptm, q, vec, ang , dim = signature(pcloud)
                 shp = self.G.node[k]['shape']
                 filename = sig + ".stp"
