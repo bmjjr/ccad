@@ -18,15 +18,16 @@ def draw_graph3d(graph, graph_colormap='winter', bgcolor = (1, 1, 1),
             if val == 1:
                 H.add_edge(node, edge)
 
-    G=nx.convert_node_labels_to_integers(H)
+    G = nx.convert_node_labels_to_integers(H)
 
-    graph_pos=nx.spring_layout(G, dim=3)
+    graph_pos = nx.spring_layout(G, dim=3)
 
     # numpy array of x,y,z positions in sorted node order
-    xyz=np.array([graph_pos[v] for v in sorted(G)])
+    xyz = np.array([graph_pos[v] for v in sorted(G)])
+    print(xyz)
 
     # scalar colors
-    scalars=np.array(G.nodes())+5
+    scalars = np.array(G.nodes())+5
     mlab.figure(1, bgcolor=bgcolor)
     mlab.clf()
 
@@ -76,6 +77,6 @@ def make_graph(nodes):
     return G
 
 # graph example
-nodes = range(16)
+nodes = range(160)
 graph = make_graph(nodes)
 draw_graph3d(graph)

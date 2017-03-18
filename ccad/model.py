@@ -16,6 +16,7 @@ License
 -------
 Distributed under the GNU LESSER GENERAL PUBLIC LICENSE Version 3.
 View LICENSE for details.
+
 """
 
 from __future__ import print_function
@@ -104,6 +105,7 @@ from OCC import TopTools as _TopTools
 import OCC.Display.SimpleGui as SimpleGui
 
 import ccad.quaternions as cq
+from mayavi import mlab
 
 logger = logging.getLogger(__name__)
 
@@ -1847,23 +1849,59 @@ class Assembly(object):
             'xy' | 'yz' | 'xz' 
         
         """
-        plt.ion()
-        if plane=='xy': 
-            pos = {k:tuple( self.G.node[k]['ptm'][0:2]) for k in range(self.Nn)} 
-        elif plane== 'yz':
-            pos = {k:tuple( self.G.node[k]['ptm'][1:]) for k in range(self.Nn)} 
-        elif plae=='xz':
-            pos = {k:(self.G.node[k]['ptm'][0],self.G[k]['ptm'][2]) for k in range(self.Nn)}
+        #plt.ion()
+        #if plane=='xy': 
+        #    pos = {k:tuple( self.G.node[k]['ptm'][0:2]) for k in range(self.Nn)} 
+        #elif plane== 'yz':
+        #    pos = {k:tuple( self.G.node[k]['ptm'][1:]) for k in range(self.Nn)} 
+        #elif plae=='xz':
+        #    pos = {k:(self.G.node[k]['ptm'][0],self.G[k]['ptm'][2]) for k in range(self.Nn)}
+        pos = {k:(self.G.node[k]['ptm'][0],
+                  self.G.node[k]['ptm'][1],
+                  self.G.node[k]['ptm'][2]) for k in range(self.Nn)}
+
+        xyz = np.array([pos[v] for v in sorted(self.G)])
+
         labels = {k:self.G.node[k]['name'] for k in range(self.Nn)} 
-        node_size = np.array([ self.G.node[k]['dim'] for k in range(self.Nn) ])
-        node_size = node_size*300/np.max(node_size)
+
+        #node_size = np.array([ self.G.node[k]['dim'] for k in range(self.Nn) ])
+        #node_size = node_size*300/np.max(node_size)
+
+        scalars = np.array(self.G.nodes())+5
+        mlab.figure(1, bgcolor=(1,1,1))
+        mlab.clf()
+
+        pts = mlab.points3d(xyz[:,0], xyz[:,1], xyz[:,2],
+                        scalars,
+                        scale_factor=0.03,
+                        scale_mode='none',
+                        colormap='winter',
+                        resolution=20)
+
+        node_size=0.03
+        edge_color=(0.8, 0.8, 0.8) 
+        edge_size=0.002
+        text_size=0.008 
+        text_color=(0, 0, 0)
 
 
+
+        #for i,(x, y, z) in enumerate(xyz):
+        #    label = mlab.text(x, y, str(i), z=z,
+        #                  width=text_size, name=str(i), 
+        #                  color=text_color)
+        #
+        #    label.property.shadow = True
+        pts.mlab_source.dataset.lines = np.array(self.G.edges())
+        tube = mlab.pipeline.tube(pts, tube_radius=edge_size)
+        mlab.pipeline.surface(tube, color=edge_color)
+
+        mlab.show() # interactive window
         #nx.draw_networkx_nodes(self.G,pos,node_size=node_size,linewidth=0)
-        nx.draw_networkx_nodes(self.G,pos,node_size=100,linewidth=0)
-        nx.draw_networkx_edges(self.G,pos,edgelist=self.G.edges())
-        nx.draw_networkx_labels(self.G,pos,labels=labels)
-        plt.show()
+        #nx.draw_networkx_nodes(self.G,pos,node_size=100,linewidth=0)
+        #nx.draw_networkx_edges(self.G,pos,edgelist=self.G.edges())
+        #nx.draw_networkx_labels(self.G,pos,labels=labels)
+        #plt.show()
 
     def __repr__(self):
         st = self.shape.__repr__()+'\n'
