@@ -102,10 +102,9 @@ from OCC.TopOpeBRep import (TopOpeBRep_FacesIntersector as
 from OCC.TopOpeBRepTool import (TopOpeBRepTool_FuseEdges as
                                 _TopOpeBRepTool_FuseEdges)
 from OCC import TopTools as _TopTools
-import OCC.Display.SimpleGui as SimpleGui
 
 import ccad.quaternions as cq
-from mayavi import mlab
+#from mayavi import mlab
 
 logger = logging.getLogger(__name__)
 
@@ -1780,11 +1779,7 @@ class Assembly(object):
         solid = from_step(filename)
         return cls(solid, origin=filename, direct=direct)
 
-    def view_node(self,node_index=0):
-        shape = self.G.node[node_index]['shape'] 
-        display, start_display, add_menu, add_function_to_menu = SimpleGui.init_display()
-        display.DisplayShape(shape, update = True)
-        start_display()
+
 
     def tag_nodes(self):
         r"""Add computed data to each node of the assembly"""

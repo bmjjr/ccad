@@ -65,17 +65,19 @@ def view_topology_with_aocutils(step_filename):
     app.SetTopWindow(frame)
     app.MainLoop()
 
-def view(model):
-    display, start_display, add_menu, add_function_to_menu = SimpleGui.init_display()
-    display.DisplayShape(model.shape, update = True)
-    start_display()
+def view_node(x,node_index=0):
+    ccad_viewer = cd.view()
+    shape = x.G.node[node_index]['shape'] 
+    for shell in shape.subshapes("Shell"):
+        ccad_viewer.display(shell)
+    cd.start()
 #
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s :: %(levelname)6s :: '
                                '%(module)20s :: %(lineno)3d :: %(message)s')
-    #filename = "step/ASM0001_ASM_1_ASM.stp"  # OCC compound
-    filename = "step/MOTORIDUTTORE_ASM.stp" # OCC compound
+    filename = "step/ASM0001_ASM_1_ASM.stp"  # OCC compound
+    #filename = "step/MOTORIDUTTORE_ASM.stp" # OCC compound
     #filename = "step/0_tabby2.stp" # OCC compound
     # filename = "step/aube_pleine.stp"  # OCC Solid
 
