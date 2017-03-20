@@ -1114,6 +1114,12 @@ class GLWidget(_QtGui.QWidget):
 
 
 def view(perspective=False):
+    """
+    Parameters
+    ----------
+    perspective : boolean
+
+    """
     global manager, app
 
     if manager == 'qt':

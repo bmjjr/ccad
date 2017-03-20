@@ -1549,7 +1549,7 @@ def signature(point_cloud):
         sig : str
         V
         ptm : middle point / barycentre of the point cloud
-        q
+        q   : quaternion for rotation  
         vec
         ang
 
@@ -1824,15 +1824,28 @@ class Assembly(object):
         for k in self.G.node:
             pcloud = self.G.node[k]['pcloud']
             if pcloud.shape[1]>3:
+                # get point cloud signature
                 sig, V, ptm, q, vec, ang , dim = signature(pcloud)
+                # get the shape 
                 shp = self.G.node[k]['shape']
                 filename = sig + ".stp"
+                # If filename does not exist save the shape in step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptm)
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
                     shp.to_step(filename)
                     filename = os.path.join(subdirectory, filename)
                     shp.to_step(filename)
+                else:
+                # read the saved shape
+                # update the node transformation 
+                # if X1 is the point cloud of the saved shape
+                # and X2 is the point cloud of the target shape orientation  
+                # The rotation matrix from X1 to X2 is 
+                # R = (X_1^tX_1)^{-1}X_1^T X2
+                # R = pinv(X1).X2
+                    saved_solid = 
+                    pass
 
     def show_graph(self,plane='yz'):
         r""" networkx graph vizualization 

@@ -5,6 +5,7 @@ r"""Decomposing an assembly obtained from a STEP file"""
 
 import wx
 import logging
+import pdb
 
 import ccad.model as cm
 import ccad.display as cd
@@ -65,12 +66,27 @@ def view_topology_with_aocutils(step_filename):
     app.SetTopWindow(frame)
     app.MainLoop()
 
-def view_node(x,node_index=0):
+def view_assembly_nodes(x,node_index=[0]):
     ccad_viewer = cd.view()
-    shape = x.G.node[node_index]['shape'] 
-    for shell in shape.subshapes("Shell"):
-        ccad_viewer.display(shell)
+    lshapes1 = [x.G.node[k]['shape'] for k in node_index] 
+    lfiles = [x.G.node[k]['name']+'.stp' for k in node_index] 
+    rep = './step/ASM0001_ASM_1_ASM/'
+    lshapes2 = [cm.from_step(rep+s) for s in lfiles] 
+    lq  = [x.G.node[k]['q'] for k in node_index] 
+    lptm = [x.G.node[k]['ptm'] for k in node_index] 
+    for k,s in enumerate(lshapes2): 
+        vec,ang = lq[k].vecang()
+        print(lq[k])
+        print(lptm[k])
+        print(vec,ang)
+        s.rotate(np.array([0,0,0]),vec,-ang)
+        s.translate(lptm[k])
+
+    # solid instantiated with a list of shells 
+    solid = cm.Solid(lshapes2)
+    ccad_viewer.display(solid)
     cd.start()
+    return(lshapes2,lq,lptm)
 #
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
