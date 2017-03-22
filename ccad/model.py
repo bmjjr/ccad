@@ -27,7 +27,7 @@ from os import path as _path
 import sys as _sys
 import re as _re  # Needed for svg
 import math as _math
-from itertools import permutations,combinations
+from itertools import permutations, combinations
 import pdb
 import urllib
 import imp
@@ -95,7 +95,7 @@ from OCC.TopoDS import (topods_Edge as _TopoDS_edge,
                         TopoDS_Shape as _TopoDS_Shape)
 from OCC import TopoDS as _TopoDS
 from OCC.TopExp import (TopExp_Explorer as _TopExp_Explorer,
-                        topexp_MapShapesAndAncestors as 
+                        topexp_MapShapesAndAncestors as
                         _TopExp_MapShapesAndAncestors)
 from OCC.TopOpeBRep import (TopOpeBRep_FacesIntersector as
                             _TopOpeBRep_FacesIntersector)
@@ -104,7 +104,7 @@ from OCC.TopOpeBRepTool import (TopOpeBRepTool_FuseEdges as
 from OCC import TopTools as _TopTools
 
 import ccad.quaternions as cq
-#from mayavi import mlab
+# from mayavi import mlab
 
 logger = logging.getLogger(__name__)
 
@@ -1581,7 +1581,7 @@ def signature(point_cloud):
 
     sig = S0 + "_" + S1 + "_" + S2
 
-    return sig, V, ptm, q, vec, ang ,dim
+    return sig, V, ptm, q, vec, ang , dim
 
 
 # Classes
@@ -1787,7 +1787,7 @@ class Assembly(object):
         for k in self.G.node:
             pcloud = self.G.node[k]['pcloud']
             if pcloud.shape[1]>3:
-                sig, V, ptm, q, vec, ang ,dim = signature(pcloud)
+                sig, V, ptm, q, vec, ang , dim = signature(pcloud)
                 self.lsig.append(sig)
                 self.G.node[k]['name'] = sig
                 self.G.node[k]['R'] = V
@@ -1809,7 +1809,13 @@ class Assembly(object):
 
     def write_components(self):
         r"""Write components of the assembly to their own step files in a
-        subdirectory of the folder containing the original file"""
+        subdirectory of the folder containing the original file
+        
+        Notes
+        -----
+
+        
+        """
         if os.path.isfile(self.origin):
             directory = os.path.dirname(self.origin)
             basename = os.path.basename(self.origin)
@@ -1828,7 +1834,10 @@ class Assembly(object):
                 sig, V, ptm, q, vec, ang , dim = signature(pcloud)
                 # get the shape 
                 shp = self.G.node[k]['shape']
+                # temporary 
+                rep = './step/ASM0001_ASM_1_ASM/'
                 filename = sig + ".stp"
+                print(filename)
                 # If filename does not exist save the shape in step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptm)
@@ -1839,12 +1848,23 @@ class Assembly(object):
                 else:
                 # read the saved shape
                 # update the node transformation 
-                # if X1 is the point cloud of the saved shape
-                # and X2 is the point cloud of the target shape orientation  
+                # if pcloud1 is the point cloud of the target shape orientation  
+                # and pcloud2 is the point cloud of the saved shape
                 # The rotation matrix from X1 to X2 is 
                 # R = (X_1^tX_1)^{-1}X_1^T X2
                 # R = pinv(X1).X2
-                    saved_solid = 
+                    saved_solid = from_step(rep+filename) 
+                    # get vertices from saved solid
+                    vertices = saved_solid.subshapes("Vertex")
+                    # stack vertices from saved solid in a point cloud 2
+                    pcloud1 = pcloud - ptm[:,None] 
+                    pcloud2 = np.ndarray(shape=(3,0))
+                    for vertex in vertices:
+                        point = np.array(vertex.center())[:, None]
+                        pcloud2 = np.hstack((pcloud2, point))
+
+                    np.testing.assert_almost_equal(np.sum(pcloud2,1),np.zeros(3))
+                    pdb.set_trace()
                     pass
 
     def show_graph(self,plane='yz'):
@@ -4242,8 +4262,10 @@ def revol(s, pabout, pdir, angle):
 
     """
     b = _BRepPrimAPI.BRepPrimAPI_MakeRevol(
-        s.shape, _gp.gp_Ax1(_gp.gp_Pnt(pabout[0], pabout[1], pabout[2]),
-                            _gp.gp_Dir(pdir[0], pdir[1], pdir[2])), angle, True)
+        s.shape, 
+        _gp.gp_Ax1(_gp.gp_Pnt(pabout[0], pabout[1], pabout[2]),
+                   _gp.gp_Dir(pdir[0], pdir[1], pdir[2])),
+                    angle, True)
     b.Build()
     if s.stype == 'Vertex':
         return Edge(b.Shape())
@@ -4361,8 +4383,9 @@ def pipe(profile, spine, continuous=False, transition='sharp',
          stype='Solid', **options):
     """
     Returns a solid which is an extrusion of a closed wire profile
-    along a wire spine.  Extrusion at discontinuities is controlled
+    along a wire spine. Extrusion at discontinuities is controlled
     with the transition option.
+
     Expects a profile and a spine.
 
     For discontinuous spines, profile may be a list of profiles to be
