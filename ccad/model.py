@@ -1680,9 +1680,10 @@ class Part(object):
         # TODO : PY3 versions (imp is not PY3 compliant)
         module = imp.load_source(name, "tmp.py")
         solid = module.part
+        anchors = module.anchors
         logger.debug("solid has type: %s" % type(solid))
         os.remove("tmp.py")
-        return cls(solid, origin="%s/%s.py" % (url, name))
+        return cls(solid, origin="%s/%s.py" % (url, name)), anchors
 
     @property
     def geometry(self):

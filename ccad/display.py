@@ -32,6 +32,7 @@ from __future__ import print_function
 import os as _os
 import sys as _sys
 import math as _math
+import logging
 
 try:
     from PyQt4 import QtCore as _QtCore, QtGui as _QtGui
@@ -66,8 +67,17 @@ from OCC.HLRBRep import (HLRBRep_Algo as _HLRBRep_Algo,
 # from OCC.TCollection import (TCollection_ExtendedString as
 #                                                   TCollection_ExtendedString)
 from OCC.TopExp import TopExp_Explorer as _TopExp_Explorer
-from OCC.Visual3d import Visual3d_ViewOrientation as _Visual3d_ViewOrientation
-from OCC.Visualization import Display3d as _Display3d
+
+# TODO : the following import breaks when migrating from OCC 0.16.2 to 0.17
+# from OCC.Visual3d import Visual3d_ViewOrientation as _Visual3d_ViewOrientation
+
+# Use Viewer3d, a subclass of Display3d
+# from OCC.Visualization import Display3d as _Display3d
+from OCC.Display.OCCViewer import Viewer3d as _Display3d
+
+from OCC.gp import gp_Pnt, gp_Vec, gp_Dir
+from OCC.Prs3d import Prs3d_Arrow, Prs3d_Presentation
+from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
 
 try:
     import ccad.model as _cm
@@ -80,6 +90,8 @@ version = '0.13'  # Change also in setup.py, doc/conf.py
 interactive = True
 manager = 'qt'
 app = None
+
+logger = logging.getLogger(__name__)
 
 
 class ViewQt(_QtGui.QWidget):
@@ -753,6 +765,36 @@ class ViewQt(_QtGui.QWidget):
 
         self.glarea.occ_context.Display(handle_aisshape, True)
 
+    def display_vector(self, origin, direction):
+        r"""Display a vector starting at origin and going in direction
+
+        Parameters
+        ----------
+        origin : tuple(float)
+            The origin coordinates (x, y, z) of the vector to display
+        direction : tuple(float)
+            The direction coordinates (x, y, z) of the vector to display
+
+        """
+        xo, yo, zo = origin
+        xd, yd, zd = direction
+        end = (xo + xd, yo + xd, zo + zd)
+        xe, ye, ze = end
+
+        # self.glarea.d3d.DisplayVector(gp_Vec(xd, yd, zd), gp_Pnt(xo, yo, zo))
+
+        presentation = Prs3d_Presentation(self.glarea.occ_context.MainPrsMgr().
+                                          GetObject().StructureManager())
+        arrow = Prs3d_Arrow()
+        arrow.Draw(presentation.GetHandle(), gp_Pnt(xe, ye, ze),
+                   gp_Dir(gp_Vec(xd, yd, zd)), _math.radians(20),
+                   gp_Vec(xd, yd, zd).Magnitude() / 4.)
+        presentation.Display()
+
+        e1 = BRepBuilderAPI_MakeEdge(gp_Pnt(xo, yo, zo), gp_Pnt(xe, ye, ze)).\
+            Edge()
+        self.display(e1, line_width=4)
+
     def clear(self, display_shapes=True):
         """Clears all shapes from the window
 
@@ -1147,8 +1189,12 @@ class GLWidget(_QtGui.QWidget):
         # Set up the OCC hooks to the OpenGL space
         window_handle = int(self.winId())
 
-        self.d3d = _Display3d()
+        self.d3d = _Display3d(window_handle=window_handle)
         self.d3d.Init(window_handle)
+
+        # GF
+        # from OCC.Display.OCCViewer import Viewer3d
+        # self.d3d = Viewer3d(window_handle)
 
         handle_occ_context = self.d3d.GetContext()
         handle_occ_viewer = self.d3d.GetViewer()
