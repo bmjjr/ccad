@@ -4,7 +4,6 @@
 r"""Example of creating a Part object from a parts library"""
 
 import logging
-
 import ccad.model as cm
 import ccad.display as cd
 
