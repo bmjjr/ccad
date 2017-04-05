@@ -1829,17 +1829,28 @@ class Assembly(object):
             raise ValueError(msg)
 
         for k in self.G.node:
+            # get the point cloud from node k 
             pcloud = self.G.node[k]['pcloud']
+            # get the shape from node k 
+            shp = self.G.node[k]['shape']
+            # if the point cloud contains more than 3 points
             if pcloud.shape[1]>3:
-                # get point cloud signature
+                # from point cloud get 
+                #
+                # sig : signature
+                # V   : 
+                # ptm : centroid point 
+                # q   : quaternion 
+                # vec : vector 
+                # ang : rotation angle
+
                 sig, V, ptm, q, vec, ang , dim = signature(pcloud)
-                # get the shape 
-                shp = self.G.node[k]['shape']
                 # temporary 
                 rep = './step/ASM0001_ASM_1_ASM/'
                 filename = sig + ".stp"
                 print(filename)
-                # If filename does not exist save the shape in step file
+                # If filename does not exist yet then save the itranslated and rotated
+                # shape in a new step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptm)
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
@@ -1865,7 +1876,6 @@ class Assembly(object):
                         pcloud2 = np.hstack((pcloud2, point))
 
                     np.testing.assert_almost_equal(np.sum(pcloud2,1),np.zeros(3))
-                    pdb.set_trace()
                     pass
 
     def show_graph(self,plane='yz'):
