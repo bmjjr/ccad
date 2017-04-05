@@ -23,10 +23,12 @@ if __name__ == "__main__":
 
     v1.display(p.geometry, color=(0.1, 0.1, 1.0), transparency=0.3)
 
-    for anchor in anchors:
-        logger.debug("Showing an anchor: %s;%s" % (str(anchor[0]), str(anchor[1])))
-        v1.display_vector(origin=anchor[0], direction=(anchor[1][0] * multiplier,
-                                                       anchor[1][1] * multiplier,
-                                                       anchor[1][2] * multiplier))
+    for k, anchor in anchors.items():
+        logger.debug("Showing an anchor: %s;%s" % (str(anchor['position']),
+                                                   str(anchor['direction'])))
+        v1.display_vector(origin=anchor['position'],
+                          direction=(anchor['direction'][0] * multiplier,
+                                     anchor['direction'][1] * multiplier,
+                                     anchor['direction'][2] * multiplier))
 
     cd.start()
