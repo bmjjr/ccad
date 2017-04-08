@@ -35,6 +35,7 @@ import imp
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.linalg as la
 
 # from OCC.ChFi3d import *
 # from OCC.BlockFix import *
@@ -107,6 +108,7 @@ import ccad.quaternions as cq
 # from mayavi import mlab
 
 logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
 
 
 # Shape Functions
@@ -1554,26 +1556,37 @@ def signature(point_cloud):
         ang
 
     """
+    # sort point cloud along x to avoid permutation of points
+    # ideally first determine the coordinates with less duplicated values 
     logger.debug("**** Call to signature() ****")
     pts = np.vstack((point_cloud[0, :], point_cloud[1, :], point_cloud[2, :])).T
     logger.debug("Shape of pts : %s" % str(pts.shape))
     ptm = np.mean(pts, axis=0)
     logger.debug("Mean pt : %s" % str(ptm))
+    #
+    # point cloud centering 
+    #
     ptsm = pts - ptm
     logger.debug("Shape of ptsm : %s" % str(ptsm.shape))  # should be as pts
+    #
+    # centered point cloud SVD
+    #
     U, S, V = np.linalg.svd(ptsm)
     logger.debug("U shape : %s" % str(U.shape))  # rotation matrix (nb_pts x nb_pts)
     logger.debug("S shape : %s" % str(S.shape))  # Diagonal matrix (3d vec)
     logger.debug(str(S))
     logger.debug("V shape : %s" % str(V.shape))  # rotation matrix (3x3)
     logger.debug(str(V))
+    #q = cq.Quaternion()
+    detV = la.det(V)
+    #if np.isclose(detV,1): 
+    #    q.from_mat(V)
+    #if np.isclose(detV,-1):
 
-    q = cq.Quaternion()
-    q.from_mat(V)
-    vec, ang = q.vecang()
+    #vec, ang = q.vecang()
     dim =(S[0]*S[1]*S[2])**1/3.
-    logger.debug("Vec : %s" % str(vec))
-    logger.debug("Ang : %f" % ang)
+    #logger.debug("Vec : %s" % str(vec))
+    #logger.debug("Ang : %f" % ang)
 
     S0 = str(int(np.ceil(S[0])))
     S1 = str(int(np.ceil(S[1])))
@@ -1581,7 +1594,8 @@ def signature(point_cloud):
 
     sig = S0 + "_" + S1 + "_" + S2
 
-    return sig, V, ptm, q, vec, ang , dim
+    #return sig, V, ptm, q, vec, ang , dim
+    return sig, V, ptm, detV, dim
 
 
 # Classes
@@ -1703,26 +1717,56 @@ class Part(object):
         return self._geometry
 
 
-class Assembly(object):
+class Assembly(nx.Graph):
     r"""
+    
+    An Assembly is a Graph
+    Each node of an Assembly represents a solid
+    Each node of an Assembly is described in an external file 
+    Each node owns : 
+        'pcloud' : a point cloud
+        'q' : a pure quaternion , 
+        'S' : a symmetry matrix , 
+        't' : a translation vector 
+    
+    Members
+    -------
+        nodes : Graph nodes
+        edges : Graph edges
+        pos   : Centroid of the nodes
+        shape : Whole shape of the assembly 
+        origin : the filename, the assembly was created from
 
-    Parameters
-    ----------
-    shape
-    origin : str
-        The file or script the assembly was created from
-    direct : bool, optional(default is False)
-        If True, directly use the point cloud of the Shell
-        If False, iterate the faces, wires and then vertices
+    Methods
+    -------
+
+    from_step : read Assembly from step file
+    tag_nodes : 
+    write_components : create a step file for each unique component of the Assembly
+    same_nodes : identify nodes which share the same solid rel=='same'
+    show_graph
+
 
     """
-    def __init__(self, shape, origin=None, direct=False):
-        self.shape = shape
-        self.G = nx.Graph()
-        self.G.pos = dict()
+    def __init__(self, solid, origin=None, direct=False):
+        """
+
+        Parameters
+        ----------
+        solid : ccad.Solid
+        origin : str
+            The file or script the assembly was created from
+        direct : bool, optional(default is False)
+            If True, directly use the point cloud of the Shell
+            If False, iterate the faces, wires and then vertices
+
+        """
+        nx.Graph.__init__(self)
+        self.solid = solid
+        self.pos = dict()
         self.origin = origin
 
-        shells = self.shape.subshapes("Shell")
+        shells = self.solid.subshapes("Shell")
         logger.info("%i shells in assembly" % len(shells))
         inode=0
         for k, shell in enumerate(shells):
@@ -1755,9 +1799,12 @@ class Assembly(object):
                     if face_type == "cylinder":
                         pass
 
+            u0 = np.argsort(pcloud[0,:])
+            pcloud = pcloud[:,u0]
+
             if len(vertices)>3:
-                self.G.pos[inode] = shell.center()
-                self.G.add_node(inode, pcloud=pcloud, shape=shell)
+                self.pos[inode] = shell.center()
+                self.add_node(inode, pcloud=pcloud, shape=shell)
                 inode +=1
 
     @classmethod
@@ -1766,6 +1813,7 @@ class Assembly(object):
 
         Parameters
         ----------
+
         filename : str
             Path to the STEP file
         direct : bool, optional(default is False)
@@ -1774,6 +1822,7 @@ class Assembly(object):
 
         Returns
         -------
+
         Assembly : the new Assembly object created from a STEP file
 
         """
@@ -1785,34 +1834,36 @@ class Assembly(object):
     def tag_nodes(self):
         r"""Add computed data to each node of the assembly"""
         self.lsig = [] 
-        for k in self.G.node:
-            pcloud = self.G.node[k]['pcloud']
+        for k in self.node:
+            pcloud = self.node[k]['pcloud']
             if pcloud.shape[1]>3:
-                sig, V, ptm, q, vec, ang , dim = signature(pcloud)
+                #sig, V, ptm, q, vec, ang , dim = signature(pcloud)
+                sig, V, ptm, detV , dim = signature(pcloud)
                 self.lsig.append(sig)
-                self.G.node[k]['name'] = sig
-                self.G.node[k]['R'] = V
-                self.G.node[k]['ptm'] = ptm
-                self.G.node[k]['q'] = q
-                self.G.node[k]['dim'] = dim 
+                self.node[k]['name'] = sig
+                self.node[k]['V'] = V
+                self.node[k]['ptm'] = ptm
+                #self.node[k]['q'] = q
+                self.node[k]['dim'] = dim 
             else:
                 print(k,pcloud.shape)
         self.lsig=list(set(self.lsig))
-        self.Nn = len(self.G.node)
+        self.Nn = len(self.node)
         
     def same_nodes(self):
-        r""" Link nodes with the same signature 
+        r""" link nodes with the same signature 
 
         Notes
         -----
 
-        An Assembly edge has an attribute which precise the kind of encoded relation. The first relation to be detected is the similarity of two solids. rel == 'same'
+        An Assembly edge has an attribute which precise the kind of encoded relation. 
+        A trivial relation is the similarity of two nodes. rel == 'same'
 
         """
         for sig in self.lsig: 
-            lnodes = [ k for k in range(self.Nn) if self.G.node[k]['name']==sig ] 
+            lnodes = [ k for k in range(self.Nn) if self.node[k]['name']==sig ] 
             for n1,n2 in combinations(lnodes,2):
-                self.G.add_edge(n1,n2,rel='same')
+                self.add_edge(n1,n2,rel='same')
 
 
     def write_components(self):
@@ -1835,11 +1886,32 @@ class Assembly(object):
             msg = "The components of the assembly should already exist"
             raise ValueError(msg)
 
-        for k in self.G.node:
+        for k in self.node:
+            sig = self.node[k]['name']
             # get the point cloud from node k 
-            pcloud = self.G.node[k]['pcloud']
+            pcloud = self.node[k]['pcloud']
+            # get the translation from node k 
+            ptm = self.node[k]['ptm']
+            # get the unitary transformation from node k
+            V = self.node[k]['V']
+            detV = la.det(V)
+            q = cq.Quaternion()
+            bmirrorx = False
+            if np.isclose(detV,1): 
+                q.from_mat(V)
+            if np.isclose(detV,-1): 
+                Mx = np.zeros((3,3))
+                Mx[0,0]=-1
+                Mx[1,1]=1
+                Mx[2,2]=1
+                Vp = np.dot(Mx,V)
+                bmirrorx=True
+                q.from_mat(Vp)
+
+            vec, ang = q.vecang()
+
             # get the shape from node k 
-            shp = self.G.node[k]['shape']
+            shp = self.node[k]['shape']
             # if the point cloud contains more than 3 points
             if pcloud.shape[1]>3:
                 # from point cloud get 
@@ -1851,7 +1923,8 @@ class Assembly(object):
                 # vec : vector 
                 # ang : rotation angle
 
-                sig, V, ptm, q, vec, ang , dim = signature(pcloud)
+                #sig, V, ptm, q, vec, ang , dim = signature(pcloud)
+                #sig, V, ptm, q, vec, ang , dim = signature(pcloud)
                 # temporary 
                 #rep = './step/ASM0001_ASM_1_ASM/'
                 filename = sig + ".stp"
@@ -1860,28 +1933,28 @@ class Assembly(object):
                 # shape in a new step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptm)
+                    if bmirrorx:
+                        shp.mirrorx()
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
                     shp.to_step(filename)
                 else:
+                    pass
                 # read the saved shape
                 # update the node transformation 
-                # if pcloud1 is the point cloud of the target shape orientation  
-                # and pcloud2 is the point cloud of the saved shape
-                # The rotation matrix from X1 to X2 is 
-                # R = (X_1^tX_1)^{-1}X_1^T X2
-                # R = pinv(X1).X2
-                    saved_solid = from_step(filename) 
+                    #saved_solid = from_step(filename) 
                     # get vertices from saved solid
-                    vertices = saved_solid.subshapes("Vertex")
+                    #vertices = saved_solid.subshapes("Vertex")
                     # stack vertices from saved solid in a point cloud 2
-                    pcloud1 = pcloud - ptm[:,None] 
-                    pcloud2 = np.ndarray(shape=(3,0))
-                    for vertex in vertices:
-                        point = np.array(vertex.center())[:, None]
-                        pcloud2 = np.hstack((pcloud2, point))
-
-                    np.testing.assert_almost_equal(np.sum(pcloud2,1),np.zeros(3))
-                    pass
+                    #pcloud1 = pcloud - ptm[:,None] 
+                    #pcloud2 = np.ndarray(shape=(3,0))
+                    #for vertex in vertices:
+                    #    point = np.array(vertex.center())[:, None]
+                    #    pcloud2 = np.hstack((pcloud2, point))
+                    # verify that pcloud 2 is centered     
+                    #np.testing.assert_almost_equal(np.sum(pcloud2,1),np.zeros(3))
+                    #R = np.dot(pcloud2,la.pinv(pcloud1))
+                    #print("Determinant : ",la.det(R))
+                    #pdb.set_trace()
 
     def show_graph(self,plane='yz'):
         r""" networkx graph vizualization 
@@ -1895,23 +1968,23 @@ class Assembly(object):
         """
         #plt.ion()
         #if plane=='xy': 
-        #    pos = {k:tuple( self.G.node[k]['ptm'][0:2]) for k in range(self.Nn)} 
+        #    pos = {k:tuple( self.node[k]['ptm'][0:2]) for k in range(self.Nn)} 
         #elif plane== 'yz':
-        #    pos = {k:tuple( self.G.node[k]['ptm'][1:]) for k in range(self.Nn)} 
+        #    pos = {k:tuple( self.node[k]['ptm'][1:]) for k in range(self.Nn)} 
         #elif plae=='xz':
-        #    pos = {k:(self.G.node[k]['ptm'][0],self.G[k]['ptm'][2]) for k in range(self.Nn)}
-        pos = {k:(self.G.node[k]['ptm'][0],
-                  self.G.node[k]['ptm'][1],
-                  self.G.node[k]['ptm'][2]) for k in range(self.Nn)}
+        #    pos = {k:(self.node[k]['ptm'][0],self[k]['ptm'][2]) for k in range(self.Nn)}
+        pos = {k:(self.node[k]['ptm'][0],
+                  self.node[k]['ptm'][1],
+                  self.node[k]['ptm'][2]) for k in range(self.Nn)}
 
-        xyz = np.array([pos[v] for v in sorted(self.G)])
+        xyz = np.array([pos[v] for v in sorted(self)])
 
-        labels = {k:self.G.node[k]['name'] for k in range(self.Nn)} 
+        labels = {k:self.node[k]['name'] for k in range(self.Nn)} 
 
-        #node_size = np.array([ self.G.node[k]['dim'] for k in range(self.Nn) ])
+        #node_size = np.array([ self.node[k]['dim'] for k in range(self.Nn) ])
         #node_size = node_size*300/np.max(node_size)
 
-        scalars = np.array(self.G.nodes())+5
+        scalars = np.array(self.nodes())+5
         mlab.figure(1, bgcolor=(1,1,1))
         mlab.clf()
 
@@ -1936,20 +2009,20 @@ class Assembly(object):
         #                  color=text_color)
         #
         #    label.property.shadow = True
-        pts.mlab_source.dataset.lines = np.array(self.G.edges())
+        pts.mlab_source.dataset.lines = np.array(self.edges())
         tube = mlab.pipeline.tube(pts, tube_radius=edge_size)
         mlab.pipeline.surface(tube, color=edge_color)
 
         mlab.show() # interactive window
-        #nx.draw_networkx_nodes(self.G,pos,node_size=node_size,linewidth=0)
-        #nx.draw_networkx_nodes(self.G,pos,node_size=100,linewidth=0)
-        #nx.draw_networkx_edges(self.G,pos,edgelist=self.G.edges())
-        #nx.draw_networkx_labels(self.G,pos,labels=labels)
+        #nx.draw_networkx_nodes(self,pos,node_size=node_size,linewidth=0)
+        #nx.draw_networkx_nodes(self,pos,node_size=100,linewidth=0)
+        #nx.draw_networkx_edges(self,pos,edgelist=self.edges())
+        #nx.draw_networkx_labels(self,pos,labels=labels)
         #plt.show()
 
     def __repr__(self):
-        st = self.shape.__repr__()+'\n'
-        st += self.G.__repr__()+'\n'
+        st = self.solid.__repr__()+'\n'
+        st += self.__repr__()+'\n'
         return st
 
 
@@ -3485,6 +3558,7 @@ Primitives
 
 Philosophy
 ----------
+
 OCC offers a variety of primitive input arguments.  Users typically
 use 1-2 of them, and the others cause confusion for those who don't
 use them.  Instead, only offer the variety that provides unique

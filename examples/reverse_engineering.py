@@ -10,6 +10,8 @@ import numpy as np
 
 import ccad.model as cm
 import ccad.display as cd
+import ccad.quaternions as cq
+import numpy.linalg as la
 
 from aocxchange.step import StepImporter
 from aocutils.display.wx_viewer import Wx3dViewer
@@ -28,10 +30,13 @@ def reverse_engineering_with_ccad(step_filename, view=False ,direct = False):
         Launch the ccad viewer?
 
     """
-
+    
+    # get Assembly from step file
     assembly = cm.Assembly.from_step(step_filename, direct= direct)
-    assembly.write_components()
+    # tag nodes with geometrical information
     assembly.tag_nodes()
+    # save individual components in separated files
+    assembly.write_components()
 
     if view:
         ccad_viewer = cd.view()
@@ -86,13 +91,13 @@ def view_assembly_nodes(x,node_index=[0]):
         + A quaternion for solid orientation in the global frame
         + A translation vector for solid placement in the global frame
 
-    This function takes an Assembly as argument and produces its view in the global 
+    This function takes an Assembly as argument and produces the view in the global 
     frame. 
 
     """
     if type(node_index)==int:
         if node_index==-1:
-            node_index = x.G.node.keys()
+            node_index = x.node.keys()
         else:
             node_index=[node_index]
 
@@ -105,46 +110,67 @@ def view_assembly_nodes(x,node_index=[0]):
     # In the final implementation. The assembly structure is not supposed to save shapes themselves 
     # but only references to files (.py or .step) 
     #
-    lshapes1 = [x.G.node[k]['shape'] for k in node_index] 
+    lshapes1 = [x.node[k]['shape'] for k in node_index] 
     # get the list of all filename associated with Assembly x
-    lfiles = [x.G.node[k]['name']+'.stp' for k in node_index] 
+    lfiles = [x.node[k]['name']+'.stp' for k in node_index] 
     # select directory where node files are saved
     # temporary 
     #
     rep = './step/ASM0001_ASM_1_ASM/'
     # get the local frame shapes from the list .step files  
     lshapes2 = [cm.from_step(rep+s) for s in lfiles] 
-    # get quaternion and translation for global frame placement
-    lq  = [x.G.node[k]['q'] for k in node_index] 
-    lptm = [x.G.node[k]['ptm'] for k in node_index] 
+    # get unitary matrix and translation for global frame placement
+    lV  = [x.node[k]['V'] for k in node_index] 
+    lptm = [x.node[k]['ptm'] for k in node_index] 
     #
     # iter on selected local shapes and apply the graph stored geometrical transformation sequence
     # 1 : rotation 
     # 2 : translation
     #
-    for k,s in enumerate(lshapes2): 
-        vec,ang = lq[k].vecang()
-        print(lq[k])
-        print(lptm[k])
-        print(vec,ang)
-        s.rotate(np.array([0,0,0]),vec,-ang)
-        s.translate(lptm[k])
+    for k,shp in enumerate(lshapes2): 
+        #print lfiles[k]
+        V = lV[k]
+        detV = la.det(V)
+        q = cq.Quaternion()
+        bmirrorx = False
+        if np.isclose(detV,1): 
+            q.from_mat(V)
+        if np.isclose(detV,-1): 
+            Mx = np.zeros((3,3))
+            Mx[0,0]=-1
+            Mx[1,1]=1
+            Mx[2,2]=1
+            Vp = np.dot(Mx,V)
+            bmirrorx=True
+            q.from_mat(Vp)
+        vec, ang = q.vecang()
+
+
+        #print(lq[k])
+        #print(lptm[k])
+        #print(vec,ang)
+        if bmirrorx:
+            shp.mirrorx()
+        shp.rotate(np.array([0,0,0]),vec,-ang)
+        shp.translate(lptm[k])
+        shp.foreground=(1,1,0.5)
 
     # create a solid with the transformed shapes 
     solid = cm.Solid(lshapes2)
-    ccad_viewer.display(solid)
+    ccad_viewer.set_background((1,1,1)) # White
+    ccad_viewer.display(solid,transparency=0.5,material='copper')
     cd.start()
-    return lshapes2,lq,lptm
+    return lshapes2,lV,lptm
 #
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s :: %(levelname)6s :: '
                                '%(module)20s :: %(lineno)3d :: %(message)s')
-    filename = "step/ASM0001_ASM_1_ASM.stp"  # OCC compound
+    #filename = "step/ASM0001_ASM_1_ASM.stp"  # OCC compound
     #filename = "step/MOTORIDUTTORE_ASM.stp" # OCC compound
-    #filename = "step/0_tabby2.stp" # OCC compound
+    filename = "step/0_tabby2.stp" # OCC compound
     #filename = "step/aube_pleine.stp"  # OCC Solid
 
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
-    view_assembly_nodes(x,node_index=np.arange(10))
+    lsh,lV,lptm=view_assembly_nodes(x,node_index=-1)
