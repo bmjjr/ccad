@@ -1801,7 +1801,14 @@ class Assembly(object):
         self.Nn = len(self.G.node)
         
     def same_nodes(self):
-        r"""Link nodes with the same signature """
+        r""" Link nodes with the same signature 
+
+        Notes
+        -----
+
+        An Assembly edge has an attribute which precise the kind of encoded relation. The first relation to be detected is the similarity of two solids. rel == 'same'
+
+        """
         for sig in self.lsig: 
             lnodes = [ k for k in range(self.Nn) if self.G.node[k]['name']==sig ] 
             for n1,n2 in combinations(lnodes,2):
@@ -1846,16 +1853,14 @@ class Assembly(object):
 
                 sig, V, ptm, q, vec, ang , dim = signature(pcloud)
                 # temporary 
-                rep = './step/ASM0001_ASM_1_ASM/'
+                #rep = './step/ASM0001_ASM_1_ASM/'
                 filename = sig + ".stp"
-                print(filename)
-                # If filename does not exist yet then save the itranslated and rotated
+                filename = os.path.join(subdirectory, filename)
+                # If filename does not exist yet then save the translated and rotated
                 # shape in a new step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptm)
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
-                    shp.to_step(filename)
-                    filename = os.path.join(subdirectory, filename)
                     shp.to_step(filename)
                 else:
                 # read the saved shape
@@ -1865,7 +1870,7 @@ class Assembly(object):
                 # The rotation matrix from X1 to X2 is 
                 # R = (X_1^tX_1)^{-1}X_1^T X2
                 # R = pinv(X1).X2
-                    saved_solid = from_step(rep+filename) 
+                    saved_solid = from_step(filename) 
                     # get vertices from saved solid
                     vertices = saved_solid.subshapes("Vertex")
                     # stack vertices from saved solid in a point cloud 2
