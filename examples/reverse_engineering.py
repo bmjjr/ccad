@@ -6,6 +6,7 @@ r"""Decomposing an assembly obtained from a STEP file"""
 import wx
 import logging
 import pdb
+import numpy as np 
 
 import ccad.model as cm
 import ccad.display as cd
@@ -36,7 +37,7 @@ def reverse_engineering_with_ccad(step_filename, view=False ,direct = False):
             ccad_viewer.display(shell)
         cd.start()
 
-    return(assembly)
+    return assembly
 
 def view_topology_with_aocutils(step_filename):
     r"""View the STEP file contents in the aocutils wx viewer.
@@ -86,7 +87,7 @@ def view_assembly_nodes(x,node_index=[0]):
     solid = cm.Solid(lshapes2)
     ccad_viewer.display(solid)
     cd.start()
-    return(lshapes2,lq,lptm)
+    return lshapes2,lq,lptm
 #
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
@@ -95,7 +96,8 @@ if __name__ == "__main__":
     filename = "step/ASM0001_ASM_1_ASM.stp"  # OCC compound
     #filename = "step/MOTORIDUTTORE_ASM.stp" # OCC compound
     #filename = "step/0_tabby2.stp" # OCC compound
-    # filename = "step/aube_pleine.stp"  # OCC Solid
+    #filename = "step/aube_pleine.stp"  # OCC Solid
 
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
+    view_assembly_nodes(x,node_index=np.arange(10))
