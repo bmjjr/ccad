@@ -116,42 +116,35 @@ def view_assembly_nodes(x,node_index=[0]):
     # select directory where node files are saved
     # temporary 
     #
-    rep = './step/ASM0001_ASM_1_ASM/'
+    #rep = './step/MOTORIDUTTORE_ASM/'
+    rep = './step/ASM0001_ASM_1_ASM/'  # OCC compound'
+    #rep = './step/MOTORIDUTTORE_ASM/'
     # get the local frame shapes from the list .step files  
     lshapes2 = [cm.from_step(rep+s) for s in lfiles] 
     # get unitary matrix and translation for global frame placement
-    lV  = [x.node[k]['V'] for k in node_index] 
+    lV   = [x.node[k]['V'] for k in node_index] 
     lptm = [x.node[k]['ptm'] for k in node_index] 
+    lbmx = [x.node[k]['bmirrorx'] for k in node_index]
     #
     # iter on selected local shapes and apply the graph stored geometrical transformation sequence
     # 1 : rotation 
     # 2 : translation
     #
     for k,shp in enumerate(lshapes2): 
-        #print lfiles[k]
+        print(type(shp))
+        print lfiles[k]
+        print lbmx[k]
         V = lV[k]
-        detV = la.det(V)
+        print V
+        print la.det(V)
+        bmirrorx = lbmx[k]
         q = cq.Quaternion()
-        bmirrorx = False
-        if np.isclose(detV,1): 
-            q.from_mat(V)
-        if np.isclose(detV,-1): 
-            Mx = np.zeros((3,3))
-            Mx[0,0]=-1
-            Mx[1,1]=1
-            Mx[2,2]=1
-            Vp = np.dot(Mx,V)
-            bmirrorx=True
-            q.from_mat(Vp)
+        q.from_mat(V)
         vec, ang = q.vecang()
-
-
-        #print(lq[k])
-        #print(lptm[k])
-        #print(vec,ang)
+        print(vec,ang)
+        shp.rotate(np.array([0,0,0]),vec,-ang)
         if bmirrorx:
             shp.mirrorx()
-        shp.rotate(np.array([0,0,0]),vec,-ang)
         shp.translate(lptm[k])
         shp.foreground=(1,1,0.5)
 
@@ -166,11 +159,11 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s :: %(levelname)6s :: '
                                '%(module)20s :: %(lineno)3d :: %(message)s')
-    #filename = "step/ASM0001_ASM_1_ASM.stp"  # OCC compound
+    filename = "step/ASM0001_ASM_1_ASM.stp"  # OCC compound
     #filename = "step/MOTORIDUTTORE_ASM.stp" # OCC compound
-    filename = "step/0_tabby2.stp" # OCC compound
+    #filename = "step/0_tabby2.stp" # OCC compound
     #filename = "step/aube_pleine.stp"  # OCC Solid
 
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
-    lsh,lV,lptm=view_assembly_nodes(x,node_index=-1)
+    #lsh,lV,lptm=view_assembly_nodes(x,node_index=-1)

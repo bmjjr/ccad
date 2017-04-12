@@ -31,6 +31,7 @@ from itertools import permutations, combinations
 import pdb
 import urllib
 import imp
+import mayavi.mlab as mlab 
 
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -1839,9 +1840,22 @@ class Assembly(nx.Graph):
             if pcloud.shape[1]>3:
                 #sig, V, ptm, q, vec, ang , dim = signature(pcloud)
                 sig, V, ptm, detV , dim = signature(pcloud)
+                detV = la.det(V)
+                bmirrorx = False
+                if np.isclose(detV,-1): 
+                    Mx = np.zeros((3,3))
+                    Mx[0,0]=-1
+                    Mx[1,1]=1
+                    Mx[2,2]=1
+                    V = np.dot(Mx,V)
+                    detV = la.det(V)
+                    assert(np.isclose(detV,1))
+                    bmirrorx = True 
+
                 self.lsig.append(sig)
                 self.node[k]['name'] = sig
                 self.node[k]['V'] = V
+                self.node[k]['bmirrorx'] = bmirrorx
                 self.node[k]['ptm'] = ptm
                 #self.node[k]['q'] = q
                 self.node[k]['dim'] = dim 
@@ -1894,20 +1908,10 @@ class Assembly(nx.Graph):
             ptm = self.node[k]['ptm']
             # get the unitary transformation from node k
             V = self.node[k]['V']
+            bmirrorx = self.node[k]['bmirrorx']
             detV = la.det(V)
             q = cq.Quaternion()
-            bmirrorx = False
-            if np.isclose(detV,1): 
-                q.from_mat(V)
-            if np.isclose(detV,-1): 
-                Mx = np.zeros((3,3))
-                Mx[0,0]=-1
-                Mx[1,1]=1
-                Mx[2,2]=1
-                Vp = np.dot(Mx,V)
-                bmirrorx=True
-                q.from_mat(Vp)
-
+            q.from_mat(V)
             vec, ang = q.vecang()
 
             # get the shape from node k 
@@ -1938,6 +1942,12 @@ class Assembly(nx.Graph):
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
                     shp.to_step(filename)
                 else:
+                    # 
+                    #  p1 = q1.V1
+                    #  p2 = q2.V2
+                    #
+                    #  q2 = q1.M 
+                    #  p2 = q1.M.V2  
                     pass
                 # read the saved shape
                 # update the node transformation 
