@@ -3,6 +3,7 @@
 """
 Description
 ----------
+
 ccad modeller designed to be imported from a python prompt or program.
 View README for a full description of ccad.
 
@@ -1548,14 +1549,17 @@ def signature(point_cloud):
 
     Parameters
     ----------
+
     point_cloud : 2D numpy array
+        the point cloud is centered
 
     Returns
     -------
+
     tuple :
         sig : str
         V
-        ptm : middle point / barycentre of the point cloud
+        ptc : middle point / barycentre of the point cloud
         q   : quaternion for rotation  
         vec
         ang
@@ -1566,7 +1570,7 @@ def signature(point_cloud):
     logger.debug("**** Call to signature() ****")
     pts = np.vstack((point_cloud[0, :], point_cloud[1, :], point_cloud[2, :])).T
     logger.debug("Shape of pts : %s" % str(pts.shape))
-    ptm = np.mean(pts, axis=0)
+    ptc = np.mean(pts, axis=0)
     logger.debug("Mean pt : %s" % str(ptm))
     #
     # point cloud centering 
@@ -1803,13 +1807,15 @@ class Assembly(nx.Graph):
                         pass
                     if face_type == "cylinder":
                         pass
-
+            
+            # sort point cloud 
             u0 = np.argsort(pcloud[0,:])
             pcloud = pcloud[:,u0]
 
+            # update graph node with point cloud array 
             if len(vertices)>3:
                 self.pos[inode] = shell.center()
-                self.add_node(inode, pcloud=pcloud, shape=shell)
+                self.add_node(inode, pcloud=pcloud, shape=shell , ptc = ptc)
                 inode +=1
 
     @classmethod
@@ -1842,8 +1848,8 @@ class Assembly(nx.Graph):
         for k in self.node:
             pcloud = self.node[k]['pcloud']
             if pcloud.shape[1]>3:
-                #sig, V, ptm, q, vec, ang , dim = signature(pcloud)
-                sig, V, ptm, detV , dim = signature(pcloud)
+                #sig, V, ptc, q, vec, ang , dim = signature(pcloud)
+                sig, V, ptc, detV , dim = signature(pcloud)
                 detV = la.det(V)
                 bmirrorx = False
                 if np.isclose(detV,-1): 
@@ -1860,10 +1866,10 @@ class Assembly(nx.Graph):
                 self.node[k]['name'] = sig
                 self.node[k]['V'] = V
                 self.node[k]['bmirrorx'] = bmirrorx
-                self.node[k]['ptm'] = ptm
+                self.node[k]['ptc'] = ptc
                 #self.node[k]['q'] = q
                 self.node[k]['dim'] = dim 
-            else:
+            else: # point cloud contains less than 4 points
                 print(k,pcloud.shape)
         self.lsig=list(set(self.lsig))
         self.Nn = len(self.node)
@@ -1909,7 +1915,7 @@ class Assembly(nx.Graph):
             # get the point cloud from node k 
             pcloud = self.node[k]['pcloud']
             # get the translation from node k 
-            ptm = self.node[k]['ptm']
+            ptc = self.node[k]['ptc']
             # get the unitary transformation from node k
             V = self.node[k]['V']
             bmirrorx = self.node[k]['bmirrorx']
@@ -1926,21 +1932,21 @@ class Assembly(nx.Graph):
                 #
                 # sig : signature
                 # V   : 
-                # ptm : centroid point 
+                # ptc : centroid point 
                 # q   : quaternion 
                 # vec : vector 
                 # ang : rotation angle
 
-                #sig, V, ptm, q, vec, ang , dim = signature(pcloud)
-                #sig, V, ptm, q, vec, ang , dim = signature(pcloud)
+                #sig, V, ptc, q, vec, ang , dim = signature(pcloud)
+                #sig, V, ptc, q, vec, ang , dim = signature(pcloud)
                 # temporary 
                 #rep = './step/ASM0001_ASM_1_ASM/'
                 filename = sig + ".stp"
                 filename = os.path.join(subdirectory, filename)
-                # If filename does not exist yet then save the translated and rotated
+                # If filename does not exist then save the translated and rotated
                 # shape in a new step file
                 if not os.path.isfile(filename):
-                    shp.translate(-ptm)
+                    shp.translate(-ptc)
                     if bmirrorx:
                         shp.mirrorx()
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
@@ -1955,19 +1961,19 @@ class Assembly(nx.Graph):
                     pass
                 # read the saved shape
                 # update the node transformation 
-                    #saved_solid = from_step(filename) 
+                    saved_solid = from_step(filename) 
                     # get vertices from saved solid
-                    #vertices = saved_solid.subshapes("Vertex")
+                    vertices = saved_solid.subshapes("Vertex")
                     # stack vertices from saved solid in a point cloud 2
-                    #pcloud1 = pcloud - ptm[:,None] 
-                    #pcloud2 = np.ndarray(shape=(3,0))
-                    #for vertex in vertices:
-                    #    point = np.array(vertex.center())[:, None]
-                    #    pcloud2 = np.hstack((pcloud2, point))
+                    #pcloud1 = pcloud - ptc[:,None] 
+                    pcloud1 = np.ndarray(shape=(3,0))
+                    for vertex in vertices:
+                        point = np.array(vertex.center())[:, None]
+                        pcloud1 = np.hstack((pcloud1, point))
                     # verify that pcloud 2 is centered     
-                    #np.testing.assert_almost_equal(np.sum(pcloud2,1),np.zeros(3))
-                    #R = np.dot(pcloud2,la.pinv(pcloud1))
-                    #print("Determinant : ",la.det(R))
+                    np.testing.assert_almost_equal(np.sum(pcloud1,1),np.zeros(3))
+                    R = np.dot(la.pinv(pcloud1),pcloud)
+                    print("Determinant : ",la.det(R))
                     #pdb.set_trace()
 
     def show_graph(self,plane='yz'):
@@ -1982,14 +1988,14 @@ class Assembly(nx.Graph):
         """
         #plt.ion()
         #if plane=='xy': 
-        #    pos = {k:tuple( self.node[k]['ptm'][0:2]) for k in range(self.Nn)} 
+        #    pos = {k:tuple( self.node[k]['ptc'][0:2]) for k in range(self.Nn)} 
         #elif plane== 'yz':
-        #    pos = {k:tuple( self.node[k]['ptm'][1:]) for k in range(self.Nn)} 
+        #    pos = {k:tuple( self.node[k]['ptc'][1:]) for k in range(self.Nn)} 
         #elif plae=='xz':
-        #    pos = {k:(self.node[k]['ptm'][0],self[k]['ptm'][2]) for k in range(self.Nn)}
-        pos = {k:(self.node[k]['ptm'][0],
-                  self.node[k]['ptm'][1],
-                  self.node[k]['ptm'][2]) for k in range(self.Nn)}
+        #    pos = {k:(self.node[k]['ptc'][0],self[k]['ptc'][2]) for k in range(self.Nn)}
+        pos = {k:(self.node[k]['ptc'][0],
+                  self.node[k]['ptc'][1],
+                  self.node[k]['ptc'][2]) for k in range(self.Nn)}
 
         xyz = np.array([pos[v] for v in sorted(self)])
 
