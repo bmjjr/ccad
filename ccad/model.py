@@ -105,6 +105,10 @@ from OCC.TopOpeBRepTool import (TopOpeBRepTool_FuseEdges as
                                 _TopOpeBRepTool_FuseEdges)
 from OCC import TopTools as _TopTools
 
+# Even though this might look like mixing model and display code, X3DomRenderer
+# is used to export an html/x3d representation (just like STEP, STL ...)
+from OCC.Display.WebGl.x3dom_renderer import X3DomRenderer
+
 import ccad.quaternions as cq
 # from mayavi import mlab
 
@@ -2244,6 +2248,46 @@ class Shape(object):
             print('Error: Could not translate shape to step')
         else:
             w.Write(name)
+
+    def to_html(self, name, vertex_shader=None, fragment_shader=None,
+                export_edges=False, color=(0.65, 0.65, 0.65),
+                specular_color=(1, 1, 1), shininess=0.9, transparency=0.,
+                line_color=(0, 0., 0.), line_width=2., mesh_quality=1.):
+        r"""Generates an html file to view the Shape in the browser
+
+        Parameters
+        ----------
+        name : str
+            name of the html file
+        vertex_shader : str
+        fragment_shader : str
+        export_edges : bool
+        color : tuple
+        specular_color : tuple
+        shininess : float
+            Between 0. and 1.
+        transparency: float
+            Between 0. and 1.
+        line_color : tuple
+        line_width : int
+        mesh_quality : float
+
+        """
+        class X3DomRendererCustomized(X3DomRenderer):
+            r"""Customized version of X3DomRenderer where the html file name can
+            be specified"""
+            def __init__(self, path):
+                # Intentionally not calling superclass constructor
+                self._path = os.path.dirname(path)
+                self._html_filename = path
+                self._x3d_shapes = []
+
+        renderer = X3DomRendererCustomized(name)
+        renderer.DisplayShape(self.shape, vertex_shader, fragment_shader,
+                              export_edges, color, specular_color, shininess,
+                              transparency, line_color, line_width,
+                              mesh_quality)
+        renderer.GenerateHTMLFile()
 
     def translate(self, pdir):
         """
