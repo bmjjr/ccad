@@ -39,6 +39,7 @@ def reverse_engineering_with_ccad(_step_filename,dirname='step',view=False ,dire
     assembly.tag_nodes()
 
 
+
     # save individual components in separated files
     assembly.write_components()
 
@@ -143,12 +144,12 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
     # 2 : translation
     #
     for k,shp in enumerate(lshapes2): 
-        print(type(shp))
-        print lfiles[k]
-        print lbmx[k]
+        #print(type(shp))
+        #print lfiles[k]
+        #print lbmx[k]
         V = lV[k]
-        print V
-        print la.det(V)
+        #print V
+        #print la.det(V)
         bmirrorx = lbmx[k]
         q = cq.Quaternion()
         q.from_mat(V)

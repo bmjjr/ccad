@@ -1567,20 +1567,11 @@ def signature(point_cloud):
     """
     # sort point cloud along x to avoid permutation of points
     # ideally first determine the coordinates with less duplicated values 
+    np.testing.assert_almost_equal(np.sum(point_cloud,1),np.zeros(3))
     logger.debug("**** Call to signature() ****")
     pts = np.vstack((point_cloud[0, :], point_cloud[1, :], point_cloud[2, :])).T
-    logger.debug("Shape of pts : %s" % str(pts.shape))
-    ptc = np.mean(pts, axis=0)
-    logger.debug("Mean pt : %s" % str(ptc))
-    #
-    # point cloud centering 
-    #
-    ptsm = pts - ptc
-    logger.debug("Shape of ptsm : %s" % str(ptsm.shape))  # should be as pts
-    #
-    # centered point cloud SVD
-    #
-    U, S, V = np.linalg.svd(ptsm)
+    logger.debug("Shape of pts : %s" % str(pts.shape))    
+    U, S, V = np.linalg.svd(pts)
     logger.debug("U shape : %s" % str(U.shape))  # rotation matrix (nb_pts x nb_pts)
     logger.debug("S shape : %s" % str(S.shape))  # Diagonal matrix (3d vec)
     logger.debug(str(S))
@@ -1604,7 +1595,7 @@ def signature(point_cloud):
     sig = S0 + "_" + S1 + "_" + S2
 
    
-    return sig, V, ptc, detV,  dim
+    return sig, V, detV,  dim
 
 
 # Classes
@@ -1810,9 +1801,15 @@ class Assembly(nx.Graph):
                     if face_type == "cylinder":
                         pass
             
-        
+            
             ptc = np.mean(pcloud, axis=1)
-            pcloud = pcloud - ptc 
+            pcloud = pcloud - ptc[:,None] 
+            #
+            # sorting points w.r.t distance to origin
+            #
+            d = np.sum(pcloud*pcloud,axis=0)
+            u = np.argsort(d)
+            pcloud = pcloud[:,u]
             # update graph node with point cloud array 
             if len(vertices)>3:
                 self.pos[inode] = shell.center()
@@ -1861,15 +1858,9 @@ class Assembly(nx.Graph):
         self.lsig = [] 
         for k in self.node:
             pcloud = self.node[k]['pcloud']
-            #
-            # sorting points w.r.t distance to origin
-            #
-            d = np.sum(pcloud*pcloud,axis=0)
-            u = np.argsort(d)
-            pcloud = pcloud[:,u]
 
             if pcloud.shape[1]>3:
-                sig, V, ptc, detV , dim = signature(pcloud)
+                sig, V, detV , dim = signature(pcloud)
                 print(sig)
                 detV = la.det(V)
                 bmirrorx = False
@@ -1887,7 +1878,6 @@ class Assembly(nx.Graph):
                 self.node[k]['name'] = sig
                 self.node[k]['V'] = V
                 self.node[k]['bmirrorx'] = bmirrorx
-                self.node[k]['ptc'] = ptc
                 #self.node[k]['q'] = q
                 self.node[k]['dim'] = dim 
             else: # point cloud contains less than 4 points
@@ -1993,7 +1983,6 @@ class Assembly(nx.Graph):
                         point = np.array(vertex.center())[:, None]
                         pcloud1 = np.hstack((pcloud1, point))
                     # verify that pcloud 2 is centered     
-                    pdb.set_trace()
                     np.testing.assert_almost_equal(np.sum(pcloud1,1),np.zeros(3))
                     R = np.dot(la.pinv(pcloud1),pcloud)
                     print("Determinant : ",la.det(R))
