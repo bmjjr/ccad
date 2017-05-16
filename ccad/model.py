@@ -496,7 +496,7 @@ def _raw_faces_same_domain(f1, f2, skip_fits=0):
     ----------
     f1 : face 1
     f2 : face 2
-    skip_fits
+    skip_fits : integer 
 
     Returns
     -------
@@ -1182,6 +1182,7 @@ def from_step(name):
 
     Parameters
     ----------
+
     name
 
     Returns
@@ -1189,6 +1190,7 @@ def from_step(name):
     <tbc>
 
     """
+    
     if _path.exists(name):
         reader = _STEPControl.STEPControl_Reader()
         logger.info("Reading STEP file : %s" % name)
@@ -1555,14 +1557,12 @@ def signature(point_cloud):
 
     Returns
     -------
-
     tuple :
         sig : str
-        V
+        V   :
         ptc : middle point / barycentre of the point cloud
-        q   : quaternion for rotation  
-        vec
-        ang
+        detV : +1 or -1 unitaryy matrix determinant
+        dim : homogeneous to meters : cubic root of profuct of all SV
 
     """
     # sort point cloud along x to avoid permutation of points
@@ -1571,11 +1571,11 @@ def signature(point_cloud):
     pts = np.vstack((point_cloud[0, :], point_cloud[1, :], point_cloud[2, :])).T
     logger.debug("Shape of pts : %s" % str(pts.shape))
     ptc = np.mean(pts, axis=0)
-    logger.debug("Mean pt : %s" % str(ptm))
+    logger.debug("Mean pt : %s" % str(ptc))
     #
     # point cloud centering 
     #
-    ptsm = pts - ptm
+    ptsm = pts - ptc
     logger.debug("Shape of ptsm : %s" % str(ptsm.shape))  # should be as pts
     #
     # centered point cloud SVD
@@ -1603,8 +1603,8 @@ def signature(point_cloud):
 
     sig = S0 + "_" + S1 + "_" + S2
 
-    #return sig, V, ptm, q, vec, ang , dim
-    return sig, V, ptm, detV, dim
+   
+    return sig, V, ptc, detV,  dim
 
 
 # Classes
@@ -1729,10 +1729,10 @@ class Part(object):
 class Assembly(nx.Graph):
     r"""
     
-    An Assembly is a Graph
+    An Assembly is a Graph.
     Each node of an Assembly represents a solid
     Each node of an Assembly is described in an external file 
-    Each node owns : 
+    A node has the following attributes : 
         'pcloud' : a point cloud
         'q' : a pure quaternion , 
         'S' : a symmetry matrix , 
@@ -1740,6 +1740,7 @@ class Assembly(nx.Graph):
     
     Members
     -------
+
         nodes : Graph nodes
         edges : Graph edges
         pos   : Centroid of the nodes
@@ -1771,6 +1772,7 @@ class Assembly(nx.Graph):
 
         """
         nx.Graph.__init__(self)
+
         self.solid = solid
         self.pos = dict()
         self.origin = origin
@@ -1808,10 +1810,9 @@ class Assembly(nx.Graph):
                     if face_type == "cylinder":
                         pass
             
-            # sort point cloud 
-            u0 = np.argsort(pcloud[0,:])
-            pcloud = pcloud[:,u0]
-
+        
+            ptc = np.mean(pcloud, axis=1)
+            pcloud = pcloud - ptc 
             # update graph node with point cloud array 
             if len(vertices)>3:
                 self.pos[inode] = shell.center()
@@ -1843,13 +1844,33 @@ class Assembly(nx.Graph):
 
 
     def tag_nodes(self):
-        r"""Add computed data to each node of the assembly"""
+        r"""Add computed data to each node of the assembly
+
+        self.node
+            dim 
+            name
+            bmirrorx 
+            ptc 
+            pcloud 
+            shape
+            V 
+
+
+        """
+        # self.lsig : list of signatures
         self.lsig = [] 
         for k in self.node:
             pcloud = self.node[k]['pcloud']
+            #
+            # sorting points w.r.t distance to origin
+            #
+            d = np.sum(pcloud*pcloud,axis=0)
+            u = np.argsort(d)
+            pcloud = pcloud[:,u]
+
             if pcloud.shape[1]>3:
-                #sig, V, ptc, q, vec, ang , dim = signature(pcloud)
                 sig, V, ptc, detV , dim = signature(pcloud)
+                print(sig)
                 detV = la.det(V)
                 bmirrorx = False
                 if np.isclose(detV,-1): 
@@ -1937,12 +1958,12 @@ class Assembly(nx.Graph):
                 # vec : vector 
                 # ang : rotation angle
 
-                #sig, V, ptc, q, vec, ang , dim = signature(pcloud)
-                #sig, V, ptc, q, vec, ang , dim = signature(pcloud)
+        
                 # temporary 
                 #rep = './step/ASM0001_ASM_1_ASM/'
                 filename = sig + ".stp"
                 filename = os.path.join(subdirectory, filename)
+                print(filename)
                 # If filename does not exist then save the translated and rotated
                 # shape in a new step file
                 if not os.path.isfile(filename):
@@ -1950,6 +1971,7 @@ class Assembly(nx.Graph):
                     if bmirrorx:
                         shp.mirrorx()
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
+
                     shp.to_step(filename)
                 else:
                     # 
@@ -1971,6 +1993,7 @@ class Assembly(nx.Graph):
                         point = np.array(vertex.center())[:, None]
                         pcloud1 = np.hstack((pcloud1, point))
                     # verify that pcloud 2 is centered     
+                    pdb.set_trace()
                     np.testing.assert_almost_equal(np.sum(pcloud1,1),np.zeros(3))
                     R = np.dot(la.pinv(pcloud1),pcloud)
                     print("Determinant : ",la.det(R))
