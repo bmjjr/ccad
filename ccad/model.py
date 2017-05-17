@@ -1925,8 +1925,8 @@ class Assembly(nx.DiGraph):
             pcloud = self.node[k]['pcloud']
             if pcloud.shape[1]>3:
                 pc , sig, V, detV , dim = signature(pcloud)
-                lsamek = self.edge[k].keys()
-                # detV = la.det(V)
+                lsamek = [ x for x in self.edge[k].keys() if self.edge[k][x]['equal']]
+                # detV = la.det(V)]
                 # if np.isclose(detV,-1):
                 #     Mx = np.zeros((3,3))
                 #     Mx[0,0]=-1

@@ -196,10 +196,14 @@ if __name__ == "__main__":
 
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
-    lsh,lV,lptm=view_assembly_nodes(x,node_index=[6,7],typ='splitted')
+    x.node[7]['mz']=False
+    #lsh,lV,lptm=view_assembly_nodes(x,node_index=[6,7],typ='splitted')
+    lsh,lV,lptm=view_assembly_nodes(x,node_index=-1,typ='splitted')
     p6 = x.node[6]['pcloud']
     p6t = x.node[6]['pc']
-    v6 = x.node[6]['v']
+    v6 = x.node[6]['V']
     p7 = x.node[7]['pcloud']
     p7t = x.node[7]['pc']
-    v7 = x.node[7]['v']
+    v7 = x.node[7]['V']
+    u6 = np.dot(v6,p6)-p6t
+    u7 = np.dot(v7,p7)-p7t
