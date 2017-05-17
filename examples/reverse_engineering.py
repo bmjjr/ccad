@@ -155,17 +155,20 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
         q.from_mat(V)
         vec, ang = q.vecang()
         print(vec,ang)
+        
+        if 'mx' in x.node[k]:
+            if x.node[k]['mx']:
+                print(k,"mx")
+                shp.mirrorx()
+        if 'my' in x.node[k]:
+            if x.node[k]['my']:
+                print(k,"my")
+                shp.mirrory()
+        if 'mz' in x.node[k]:
+            if x.node[k]['mz']:
+                print(k,"mz")
+                shp.mirrorz()
         shp.rotate(np.array([0,0,0]),vec,-ang)
-        # if 'mx' in x.node[k]:
-        #     print(k,"mx")
-        #     shp.mirrorx()
-        # if 'my' in x.node[k]:
-        #     print(k,"my")
-        #     shp.mirrory()
-        # if 'mz' in x.node[k]:
-        #     print(k,"mz")
-        #     shp.mirrorz()
-
         shp.translate(lptm[k])
         shp.foreground=(1,1,0.5)
 

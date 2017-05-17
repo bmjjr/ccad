@@ -163,6 +163,32 @@ def _rotate(s1, pabout, pdir, angle):
     trf.Perform(s1.shape, True)
     return trf.Shape()
 
+def _transform(s1, U):
+    r"""
+
+    Parameters
+    ----------
+    s1
+    pabout : tuple[float]
+        The coordinates of a point on the rotation axis
+    pdir : tuple[float]
+        The axis direction vector coordinates
+    angle : float
+
+    Returns
+    -------
+    The rotated shape
+
+
+    """
+    m = _gp.gp_Trsf()
+    Ax3 = _gp.gp_Ax3(_gp.gp_Pnt(0, 0, 0),
+                     _gp.gp_Dir(U[1,0], U[1,1], U[1,2]),
+                     _gp.gp_Dir(U[0,0], U[0,1], U[0,2]))
+    m.SetTransformation(Ax3)
+    trf = _BRepBuilderAPI.BRepBuilderAPI_Transform(m)
+    trf.Perform(s1.shape, True)
+    return trf.Shape()
 
 def _mirror(s1, pabout, pdir):
     r"""
@@ -1582,7 +1608,7 @@ def signature(point_cloud):
     #if np.isclose(detV,1): 
     #    q.from_mat(V)
     #if np.isclose(detV,-1):
-
+    pc = np.dot(U[:,0:3],np.diag(S))
     #vec, ang = q.vecang()
     dim =(S[0]*S[1]*S[2])**1/3.
     #logger.debug("Vec : %s" % str(vec))
@@ -1595,7 +1621,7 @@ def signature(point_cloud):
     sig = S0 + "_" + S1 + "_" + S2
 
    
-    return sig, V, detV,  dim
+    return pc.T, sig, V, detV,  dim
 
 
 # Classes
@@ -1806,9 +1832,9 @@ class Assembly(nx.DiGraph):
             pcloud = pcloud - ptc[:,None] 
             #
             # sorting points w.r.t distance to origin
-            #
+            #       
             d = np.sqrt(np.sum(pcloud*pcloud,axis=0))
-            u = np.argsort(d)
+            u  = np.argsort(d)
             pcloud = pcloud[:,u]
             # update graph node with point cloud array 
             if len(vertices)>3:
@@ -1895,9 +1921,22 @@ class Assembly(nx.DiGraph):
         for k in self.node:
             pcloud = self.node[k]['pcloud']
             if pcloud.shape[1]>3:
-                sig, V, detV , dim = signature(pcloud)
+                pc , sig, V, detV , dim = signature(pcloud)
                 lsamek = self.edge[k].keys()
-                
+                detV = la.det(V)
+                if np.isclose(detV,-1):
+                    Mx = np.zeros((3,3))
+                    Mx[0,0]=-1
+                    Mx[1,1]=1
+                    Mx[2,2]=1
+                    V = np.dot(Mx,V)
+                    detV = la.det(V)
+                    assert(np.isclose(detV,1))
+                    try: 
+                        self.node[k]['mx']=not(self.node['mx'])
+                    except:
+                        self.node[k]['mx']=True
+
                 if lsamek==[]:
                     self.lsig.append(sig)
                     self.node[k]['name'] = sig
@@ -1910,6 +1949,8 @@ class Assembly(nx.DiGraph):
                     # self.node[k]['dim']= self.node[refnode]['dim']
                 self.node[k]['V'] = V
                 self.node[k]['dim'] = dim
+                self.node[k]['pc'] = pc
+                
                  
             else: # point cloud contains less than 4 points
                 print(k,pcloud.shape)
@@ -1972,9 +2013,12 @@ class Assembly(nx.DiGraph):
                 # shape in a new step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptc)
-                    # if bmirrorx:
-                    #     shp.mirrorx()
+                    
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
+
+                    # if 'mx' in self.node:
+                    #     if self.node[k]['mx']:
+                    #         shp.mirrorx()
 
                     shp.to_step(filename)
                 # else:
@@ -2377,6 +2421,9 @@ class Shape(object):
 
         """
         self.shape = _rotate(self, (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), angle)
+
+    def transform(self, U):
+        self.shape = _transform(self,U)
 
     def mirror(self, pabout, pdir):
         """
