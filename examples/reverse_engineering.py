@@ -13,6 +13,8 @@ import ccad.model as cm
 import ccad.display as cd
 import ccad.quaternions as cq
 import numpy.linalg as la
+import networkx as nx
+import matplotlib.pyplot as plt 
 
 from aocxchange.step import StepImporter
 from aocutils.display.wx_viewer import Wx3dViewer
@@ -127,9 +129,7 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
     fileorig = x.origin.split('.')[0]
     
     rep = os.path.join('.',fileorig)
-    #rep = './step/MOTORIDUTTORE_ASM/'
-    #rep = './step/ASM0001_ASM_1_ASM/'  # OCC compound'
-    #rep = './step/MOTORIDUTTORE_ASM/'
+
     # get the local frame shapes from the list .step files  
     lshapes2 = [cm.from_step(os.path.join(rep,s)) for s in lfiles] 
 
@@ -137,7 +137,7 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
     # get unitary matrix and translation for global frame placement
     lV   = [x.node[k]['V'] for k in node_index] 
     lptm = [x.node[k]['ptc'] for k in node_index] 
-    lbmx = [x.node[k]['bmirrorx'] for k in node_index]
+    #lbmx = [x.node[k]['bmirrorx'] for k in node_index]
     #
     # iter on selected local shapes and apply the graph stored geometrical transformation sequence
     # 1 : rotation 
@@ -149,15 +149,23 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
         #print lbmx[k]
         V = lV[k]
         #print V
-        #print la.det(V)
-        bmirrorx = lbmx[k]
+        print k,la.det(V)
+        #bmirrorx = lbmx[k]
         q = cq.Quaternion()
         q.from_mat(V)
         vec, ang = q.vecang()
         print(vec,ang)
         shp.rotate(np.array([0,0,0]),vec,-ang)
-        if bmirrorx:
-            shp.mirrorx()
+        # if 'mx' in x.node[k]:
+        #     print(k,"mx")
+        #     shp.mirrorx()
+        # if 'my' in x.node[k]:
+        #     print(k,"my")
+        #     shp.mirrory()
+        # if 'mz' in x.node[k]:
+        #     print(k,"mz")
+        #     shp.mirrorz()
+
         shp.translate(lptm[k])
         shp.foreground=(1,1,0.5)
 
@@ -177,11 +185,11 @@ if __name__ == "__main__":
     logging.basicConfig(level=level,
                         format='%(asctime)s :: %(levelname)6s :: '
                                '%(module)20s :: %(lineno)3d :: %(message)s')
-    #filename = "ASM0001_ASM_1_ASM.stp"  # OCC compound
-    filename = "MOTORIDUTTORE_ASM.stp" # OCC compound
+    filename = "ASM0001_ASM_1_ASM.stp"  # OCC compound
+    #filename = "MOTORIDUTTORE_ASM.stp" # OCC compound
     #filename = "0_tabby2.stp" # OCC compound
     #filename = "aube_pleine.stp"  # OCC Solid
 
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
-    lsh,lV,lptm=view_assembly_nodes(x,node_index=-1)
+    lsh,lV,lptm=view_assembly_nodes(x,node_index=-1,typ='splitted')

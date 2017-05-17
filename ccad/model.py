@@ -1717,7 +1717,7 @@ class Part(object):
         return self._geometry
 
 
-class Assembly(nx.Graph):
+class Assembly(nx.DiGraph):
     r"""
     
     An Assembly is a Graph.
@@ -1762,7 +1762,7 @@ class Assembly(nx.Graph):
             If False, iterate the faces, wires and then vertices
 
         """
-        nx.Graph.__init__(self)
+        nx.DiGraph.__init__(self)
 
         self.solid = solid
         self.pos = dict()
@@ -1807,13 +1807,13 @@ class Assembly(nx.Graph):
             #
             # sorting points w.r.t distance to origin
             #
-            d = np.sum(pcloud*pcloud,axis=0)
+            d = np.sqrt(np.sum(pcloud*pcloud,axis=0))
             u = np.argsort(d)
             pcloud = pcloud[:,u]
             # update graph node with point cloud array 
             if len(vertices)>3:
                 self.pos[inode] = shell.center()
-                self.add_node(inode, pcloud=pcloud, shape=shell , ptc = ptc)
+                self.add_node(inode, pcloud=pcloud, shape=shell , dist=d[u], ptc = ptc)
                 inode +=1
 
     @classmethod
@@ -1846,7 +1846,6 @@ class Assembly(nx.Graph):
         self.node
             dim 
             name
-            bmirrorx 
             ptc 
             pcloud 
             shape
@@ -1855,51 +1854,68 @@ class Assembly(nx.Graph):
 
         """
         # self.lsig : list of signatures
+        
+        for k in self.node:
+             pk = self.node[k]['pcloud']
+             dk = self.node[k]['dist']
+             for j in range(k):
+                dj = self.node[j]['dist']
+                if len(dk)==len(dj):
+                    Edn = np.sum(dk)
+                    Edj = np.sum(dj)
+                    rho1 = np.abs(Edn-Edj)/(Edn+Edj)
+                    DEjk = np.sum(np.abs(dk-dj))
+                    rho2 = DEjk/(Edn+Edj) 
+                    if np.allclose(DEjk,0):
+                        # The two point clouds are equal w.r.t sorted point to origin distances
+                        if self.edge[j].keys()==[]:
+                            self.add_edge(k,j,equal=True,close=True,mx=False,my=False,mz=False)
+                    elif (rho1<0.01) and (rho2<0.05):
+                        if self.edge[j].keys()==[]:
+                        # The two point clouds are closed w.r.t sorted point to origin distances
+                            self.add_edge(k,j,equal=False,close=True,mx=False,my=False,mz=False)
+                    #
+                    # detection of eventual symmetry 
+                    #
+                    # The symmetry is informed in the node
+                    #
+                    if j in self.edge[k]:
+                        pj = self.node[j]['pcloud']
+                        dpkj = np.sum(np.abs(pk-pj),axis=1)
+                        nomirror = np.isclose(dpkj,0)
+                        if nomirror[0]==False:
+                            self.add_node(k,mx=True)
+                        if nomirror[1]==False:
+                            self.add_node(k,my=True)
+                        if nomirror[2]==False:
+                            self.add_node(k,mz=True)
+
+
         self.lsig = [] 
         for k in self.node:
             pcloud = self.node[k]['pcloud']
-
             if pcloud.shape[1]>3:
                 sig, V, detV , dim = signature(pcloud)
-                print(sig)
-                detV = la.det(V)
-                bmirrorx = False
-                if np.isclose(detV,-1): 
-                    Mx = np.zeros((3,3))
-                    Mx[0,0]=-1
-                    Mx[1,1]=1
-                    Mx[2,2]=1
-                    V = np.dot(Mx,V)
-                    detV = la.det(V)
-                    assert(np.isclose(detV,1))
-                    bmirrorx = True 
-
-                self.lsig.append(sig)
-                self.node[k]['name'] = sig
+                lsamek = self.edge[k].keys()
+                
+                if lsamek==[]:
+                    self.lsig.append(sig)
+                    self.node[k]['name'] = sig
+                    # self.node[k]['V'] = V
+                    # self.node[k]['dim'] = dim
+                else: 
+                    refnode = [x for x in lsamek if self.edge[x].keys()==[]][0]
+                    self.node[k]['name'] = self.node[refnode]['name']
+                    # self.node[k]['V']= self.node[refnode]['V']
+                    # self.node[k]['dim']= self.node[refnode]['dim']
                 self.node[k]['V'] = V
-                self.node[k]['bmirrorx'] = bmirrorx
-                #self.node[k]['q'] = q
-                self.node[k]['dim'] = dim 
+                self.node[k]['dim'] = dim
+                 
             else: # point cloud contains less than 4 points
                 print(k,pcloud.shape)
         self.lsig=list(set(self.lsig))
         self.Nn = len(self.node)
         
-    def same_nodes(self):
-        r""" link nodes with the same signature 
-
-        Notes
-        -----
-
-        An Assembly edge has an attribute which precise the kind of encoded relation. 
-        A trivial relation is the similarity of two nodes. rel == 'same'
-
-        """
-        for sig in self.lsig: 
-            lnodes = [ k for k in range(self.Nn) if self.node[k]['name']==sig ] 
-            for n1,n2 in combinations(lnodes,2):
-                self.add_edge(n1,n2,rel='same')
-
 
     def write_components(self):
         r"""Write components of the assembly to their own step files in a
@@ -1929,7 +1945,7 @@ class Assembly(nx.Graph):
             ptc = self.node[k]['ptc']
             # get the unitary transformation from node k
             V = self.node[k]['V']
-            bmirrorx = self.node[k]['bmirrorx']
+            #bmirrorx = self.node[k]['bmirrorx']
             detV = la.det(V)
             q = cq.Quaternion()
             q.from_mat(V)
@@ -1948,45 +1964,43 @@ class Assembly(nx.Graph):
                 # vec : vector 
                 # ang : rotation angle
 
-        
-                # temporary 
-                #rep = './step/ASM0001_ASM_1_ASM/'
+    
                 filename = sig + ".stp"
                 filename = os.path.join(subdirectory, filename)
-                print(filename)
+                #print(filename)
                 # If filename does not exist then save the translated and rotated
                 # shape in a new step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptc)
-                    if bmirrorx:
-                        shp.mirrorx()
+                    # if bmirrorx:
+                    #     shp.mirrorx()
                     shp.rotate(np.array([0, 0, 0]), vec, ang)
 
                     shp.to_step(filename)
-                else:
-                    # 
-                    #  p1 = q1.V1
-                    #  p2 = q2.V2
-                    #
-                    #  q2 = q1.M 
-                    #  p2 = q1.M.V2  
-                    pass
-                # read the saved shape
-                # update the node transformation 
-                    saved_solid = from_step(filename) 
-                    # get vertices from saved solid
-                    vertices = saved_solid.subshapes("Vertex")
-                    # stack vertices from saved solid in a point cloud 2
-                    #pcloud1 = pcloud - ptc[:,None] 
-                    pcloud1 = np.ndarray(shape=(3,0))
-                    for vertex in vertices:
-                        point = np.array(vertex.center())[:, None]
-                        pcloud1 = np.hstack((pcloud1, point))
-                    # verify that pcloud 2 is centered     
-                    np.testing.assert_almost_equal(np.sum(pcloud1,1),np.zeros(3))
-                    R = np.dot(la.pinv(pcloud1),pcloud)
-                    print("Determinant : ",la.det(R))
-                    #pdb.set_trace()
+                # else:
+                #     # 
+                #     #  p1 = q1.V1
+                #     #  p2 = q2.V2
+                #     #
+                #     #  q2 = q1.M 
+                #     #  p2 = q1.M.V2  
+                #     pass
+                # # read the saved shape
+                # # update the node transformation 
+                #     saved_solid = from_step(filename) 
+                #     # get vertices from saved solid
+                #     vertices = saved_solid.subshapes("Vertex")
+                #     # stack vertices from saved solid in a point cloud 2
+                #     #pcloud1 = pcloud - ptc[:,None] 
+                #     pcloud1 = np.ndarray(shape=(3,0))
+                #     for vertex in vertices:
+                #         point = np.array(vertex.center())[:, None]
+                #         pcloud1 = np.hstack((pcloud1, point))
+                #     # verify that pcloud 2 is centered     
+                #     np.testing.assert_almost_equal(np.sum(pcloud1,1),np.zeros(3))
+                #     R = np.dot(la.pinv(pcloud1),pcloud)
+                #     print("Determinant : ",la.det(R))
+                #     #pdb.set_trace()
 
     def show_graph(self,plane='yz'):
         r""" networkx graph vizualization 
