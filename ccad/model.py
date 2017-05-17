@@ -1855,7 +1855,7 @@ class Assembly(nx.DiGraph):
             pcloud = pcloud[:,u]
             # update graph node with point cloud array 
             if len(vertices)>3:
-                self.pos[inode] = shell.center()
+                self.pos[inode] = ptc
                 self.add_node(inode, pcloud=pcloud, shape=shell , dist=d[u], ptc = ptc)
                 inode +=1
 
@@ -1926,19 +1926,6 @@ class Assembly(nx.DiGraph):
             if pcloud.shape[1]>3:
                 pc , sig, V, detV , dim = signature(pcloud)
                 lsamek = [ x for x in self.edge[k].keys() if self.edge[k][x]['equal']]
-                # detV = la.det(V)]
-                # if np.isclose(detV,-1):
-                #     Mx = np.zeros((3,3))
-                #     Mx[0,0]=-1
-                #     Mx[1,1]=1
-                #     Mx[2,2]=1
-                #     V = np.dot(Mx,V)
-                #     detV = la.det(V)
-                #     assert(np.isclose(detV,1))
-                #     try: 
-                #         self.node[k]['mx']=not(self.node['mx'])
-                #     except:
-                #         self.node[k]['mx']=True
 
                 if lsamek==[]:
                     self.lsig.append(sig)
