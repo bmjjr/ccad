@@ -177,10 +177,10 @@ if __name__ == "__main__":
     logging.basicConfig(level=level,
                         format='%(asctime)s :: %(levelname)6s :: '
                                '%(module)20s :: %(lineno)3d :: %(message)s')
-    filename = "ASM0001_ASM_1_ASM.stp"  # OCC compound
-    #filename = "step/MOTORIDUTTORE_ASM.stp" # OCC compound
-    #filename = "step/0_tabby2.stp" # OCC compound
-    #filename = "step/aube_pleine.stp"  # OCC Solid
+    #filename = "ASM0001_ASM_1_ASM.stp"  # OCC compound
+    filename = "MOTORIDUTTORE_ASM.stp" # OCC compound
+    #filename = "0_tabby2.stp" # OCC compound
+    #filename = "aube_pleine.stp"  # OCC Solid
 
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
