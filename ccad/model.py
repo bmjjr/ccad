@@ -168,23 +168,38 @@ def _transform(s1, U):
 
     Parameters
     ----------
-    s1
-    pabout : tuple[float]
-        The coordinates of a point on the rotation axis
-    pdir : tuple[float]
-        The axis direction vector coordinates
-    angle : float
+    
+    s1 : shape
+    U : np.array() 3 x 3 
+        unitary matrix to apply  (det = +/- 1)
 
     Returns
     -------
-    The rotated shape
+
+    The transformed shape
 
 
     """
     m = _gp.gp_Trsf()
-    Ax3 = _gp.gp_Ax3(_gp.gp_Pnt(0, 0, 0),
-                     _gp.gp_Dir(U[1,0], U[1,1], U[1,2]),
-                     _gp.gp_Dir(U[0,0], U[0,1], U[0,2]))
+   
+    Ax3 = _gp.gp_Ax3(_gp.gp_Pnt(0,0,0),
+                      _gp.gp_Dir(U[0,2], U[1,2], U[2,2]),
+                      _gp.gp_Dir(U[0,0], U[1,0], U[2,0]))
+
+    if np.isclose(la.det(U),-1):
+        Ax3.YReverse()
+        assert(not Ax3.Direct())
+    elif np.isclose(la.det(U),1):
+        assert(Ax3.Direct())
+
+    # DEBUG
+    # 
+    # print(Ax3.XDirection().X(),Ax3.XDirection().Y(),Ax3.XDirection().Z())
+    # print(Ax3.YDirection().X(),Ax3.YDirection().Y(),Ax3.YDirection().Z())
+    # print(Ax3.Direction().X(),Ax3.Direction().Y(),Ax3.Direction().Z())
+    # print("--")
+    # print(U)
+
     m.SetTransformation(Ax3)
     trf = _BRepBuilderAPI.BRepBuilderAPI_Transform(m)
     trf.Perform(s1.shape, True)
@@ -1780,6 +1795,7 @@ class Assembly(nx.DiGraph):
 
         Parameters
         ----------
+
         solid : ccad.Solid
         origin : str
             The file or script the assembly was created from
@@ -1832,9 +1848,10 @@ class Assembly(nx.DiGraph):
             pcloud = pcloud - ptc[:,None] 
             #
             # sorting points w.r.t distance to origin
-            #       
+            # This sorting is necessary for comparing two point clouds   
+            #     
             d = np.sqrt(np.sum(pcloud*pcloud,axis=0))
-            u  = np.argsort(d)
+            u = np.argsort(d)
             pcloud = pcloud[:,u]
             # update graph node with point cloud array 
             if len(vertices)>3:
@@ -1895,26 +1912,12 @@ class Assembly(nx.DiGraph):
                     if np.allclose(DEjk,0):
                         # The two point clouds are equal w.r.t sorted point to origin distances
                         if self.edge[j].keys()==[]:
-                            self.add_edge(k,j,equal=True,close=True,mx=False,my=False,mz=False)
+                            self.add_edge(k,j,equal=True,close=True)
                     elif (rho1<0.01) and (rho2<0.05):
                         if self.edge[j].keys()==[]:
                         # The two point clouds are closed w.r.t sorted point to origin distances
-                            self.add_edge(k,j,equal=False,close=True,mx=False,my=False,mz=False)
-                    #
-                    # detection of eventual symmetry 
-                    #
-                    # The symmetry is informed in the node
-                    #
-                    if j in self.edge[k]:
-                        pj = self.node[j]['pcloud']
-                        dpkj = np.sum(np.abs(pk-pj),axis=1)
-                        nomirror = np.isclose(dpkj,0)
-                        if nomirror[0]==False:
-                            self.add_node(k,mx=True)
-                        if nomirror[1]==False:
-                            self.add_node(k,my=True)
-                        if nomirror[2]==False:
-                            self.add_node(k,mz=True)
+                            self.add_edge(k,j,equal=False,close=True)
+                    
 
 
         self.lsig = [] 
@@ -1923,19 +1926,19 @@ class Assembly(nx.DiGraph):
             if pcloud.shape[1]>3:
                 pc , sig, V, detV , dim = signature(pcloud)
                 lsamek = self.edge[k].keys()
-                detV = la.det(V)
-                if np.isclose(detV,-1):
-                    Mx = np.zeros((3,3))
-                    Mx[0,0]=-1
-                    Mx[1,1]=1
-                    Mx[2,2]=1
-                    V = np.dot(Mx,V)
-                    detV = la.det(V)
-                    assert(np.isclose(detV,1))
-                    try: 
-                        self.node[k]['mx']=not(self.node['mx'])
-                    except:
-                        self.node[k]['mx']=True
+                # detV = la.det(V)
+                # if np.isclose(detV,-1):
+                #     Mx = np.zeros((3,3))
+                #     Mx[0,0]=-1
+                #     Mx[1,1]=1
+                #     Mx[2,2]=1
+                #     V = np.dot(Mx,V)
+                #     detV = la.det(V)
+                #     assert(np.isclose(detV,1))
+                #     try: 
+                #         self.node[k]['mx']=not(self.node['mx'])
+                #     except:
+                #         self.node[k]['mx']=True
 
                 if lsamek==[]:
                     self.lsig.append(sig)
@@ -1945,8 +1948,25 @@ class Assembly(nx.DiGraph):
                 else: 
                     refnode = [x for x in lsamek if self.edge[x].keys()==[]][0]
                     self.node[k]['name'] = self.node[refnode]['name']
+                    pcsame = self.node[refnode]['pc']
                     # self.node[k]['V']= self.node[refnode]['V']
                     # self.node[k]['dim']= self.node[refnode]['dim']
+                    #
+                    # detection of eventual symmetry 
+                    #
+                    # The symmetry is informed in the node
+                    #
+                    
+                        
+                    dp = np.sum(np.abs(pcsame-pc),axis=1)
+                    nomirror = np.isclose(dp,0)
+                    if nomirror[0]==False:
+                        self.add_node(k,mx=True)
+                    if nomirror[1]==False:
+                        self.add_node(k,my=True)
+                    if nomirror[2]==False:
+                        self.add_node(k,mz=True)
+
                 self.node[k]['V'] = V
                 self.node[k]['dim'] = dim
                 self.node[k]['pc'] = pc
@@ -1987,10 +2007,10 @@ class Assembly(nx.DiGraph):
             # get the unitary transformation from node k
             V = self.node[k]['V']
             #bmirrorx = self.node[k]['bmirrorx']
-            detV = la.det(V)
-            q = cq.Quaternion()
-            q.from_mat(V)
-            vec, ang = q.vecang()
+            # detV = la.det(V)
+            # q = cq.Quaternion()
+            # q.from_mat(V)
+            # vec, ang = q.vecang()
 
             # get the shape from node k 
             shp = self.node[k]['shape']
@@ -2009,12 +2029,14 @@ class Assembly(nx.DiGraph):
                 filename = sig + ".stp"
                 filename = os.path.join(subdirectory, filename)
                 #print(filename)
-                # If filename does not exist then save the translated and rotated
-                # shape in a new step file
+                # If filename does not exist then save the transformed shape 
+                #  Translation 
+                #  Unitary transformation 
+                # in a new step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptc)
-                    
-                    shp.rotate(np.array([0, 0, 0]), vec, ang)
+                    shp.transform(V.T)
+                    #shp.rotate(np.array([0, 0, 0]), vec, ang)
 
                     # if 'mx' in self.node:
                     #     if self.node[k]['mx']:
@@ -3692,11 +3714,14 @@ Primitives
 Philosophy
 ----------
 
-OCC offers a variety of primitive input arguments.  Users typically
-use 1-2 of them, and the others cause confusion for those who don't
-use them.  Instead, only offer the variety that provides unique
-topologies.  Those varieties with differing positions and orientations
-are not used.  They can be arrived at with transformations.
+OCC offers a variety of primitive input arguments.  
+Users typically use 1-2 of them, and the others cause confusion for those who don't
+use them. 
+
+Instead, ccad only offer the variety that provides unique topologies.  
+
+Those varieties with differing positions and orientations are not used.  They can be arrived at with transformations.
+
 """
 
 

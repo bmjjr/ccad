@@ -149,26 +149,27 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
         #print lbmx[k]
         V = lV[k]
         #print V
-        print k,la.det(V)
-        #bmirrorx = lbmx[k]
-        q = cq.Quaternion()
-        q.from_mat(V)
-        vec, ang = q.vecang()
-        print(vec,ang)
+        # print k,la.det(V)
+        # #bmirrorx = lbmx[k]
+        # q = cq.Quaternion()
+        # q.from_mat(V)
+        # vec, ang = q.vecang()
+        # print(vec,ang)
+        shp.transform(V)
+        # if 'mx' in x.node[k]:
+        #     if x.node[k]['mx']:
+        #         print(k,"mx")
+        #         shp.mirrorx()
+        # if 'my' in x.node[k]:
+        #     if x.node[k]['my']:
+        #         print(k,"my")
+        #         shp.mirrory()
+        # if 'mz' in x.node[k]:
+        #     if x.node[k]['mz']:
+        #         print(k,"mz")
+        #         shp.mirrorz()
+        #shp.rotate(np.array([0,0,0]),vec,-ang)
         
-        if 'mx' in x.node[k]:
-            if x.node[k]['mx']:
-                print(k,"mx")
-                shp.mirrorx()
-        if 'my' in x.node[k]:
-            if x.node[k]['my']:
-                print(k,"my")
-                shp.mirrory()
-        if 'mz' in x.node[k]:
-            if x.node[k]['mz']:
-                print(k,"mz")
-                shp.mirrorz()
-        shp.rotate(np.array([0,0,0]),vec,-ang)
         shp.translate(lptm[k])
         shp.foreground=(1,1,0.5)
 
@@ -195,4 +196,10 @@ if __name__ == "__main__":
 
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
-    lsh,lV,lptm=view_assembly_nodes(x,node_index=-1,typ='splitted')
+    lsh,lV,lptm=view_assembly_nodes(x,node_index=[6,7],typ='splitted')
+    p6 = x.node[6]['pcloud']
+    p6t = x.node[6]['pc']
+    v6 = x.node[6]['v']
+    p7 = x.node[7]['pcloud']
+    p7t = x.node[7]['pc']
+    v7 = x.node[7]['v']
