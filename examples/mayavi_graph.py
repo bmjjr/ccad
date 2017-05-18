@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 from mayavi import mlab
+import pdb
 
 import random
 
@@ -24,6 +25,7 @@ def draw_graph3d(graph, graph_colormap='winter', bgcolor = (1, 1, 1),
 
     # numpy array of x,y,z positions in sorted node order
     xyz = np.array([graph_pos[v] for v in sorted(G)])
+    pdb.set_trace()
     print(xyz)
 
     # scalar colors

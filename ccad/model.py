@@ -1987,43 +1987,53 @@ class Assembly(nx.DiGraph):
             del d['shape']
             del d['dist']
             del d['pc']
+            
+        # set a boolean for not cleaning twice
+        self.bclean = True
+
+    def serialize(self):
+        for (n,d) in self.nodes(data=True):
             V = d['V']
             ptc = d['ptc']
-            #nbig = 1e12
-            # lV = str(list((d['V'].ravel()*nbig).astype(int)))
-            # lptc = str(list((d['ptc']*nbig).astype(int)))
-            # ptcr = np.array(eval(lptc))/nbig
-            # Vr = np.array(eval(lV)).reshape(3,3)
-            # Vr = Vr/nbig
-
             lV = str(list((d['V'].ravel())))
             lptc = str(list((d['ptc'])))
             ptcr = np.array(eval(lptc))
-            Vr = np.array(eval(lV)).reshape(3,3)
-            # Vr = Vr/nbig
-            
+            Vr = np.array(eval(lV)).reshape(3,3)   
             assert(np.isclose(V-Vr,0).all())
             assert(np.isclose(ptc-ptcr,0).all())
             d['V']=lV
             d['ptc']=lptc
-        # set a boolean for not cleaning twice
-        self.bclean = True
-    
+
+    def unserialize(self):
+        for (n,d) in self.nodes(data=True):
+            lV = d['V']
+            lptc = d['ptc']
+            ptcr = np.array(eval(lptc))
+            Vr = np.array(eval(lV)).reshape(3,3)   
+            d['V']=Vr
+            d['ptc']=ptcr
+
     def save_json(self):
         if not self.bclean:
             self.clean
+        self.serialize()
         data = json_graph.node_link_data(self)
         filename = self.origin.replace('.stp','.json') 
         fd = open(filename,'w')
         with fd: 
             json.dump(data,fd)
-        
+        self.unserialize()
+
+    def load(self):
+        pass
 
     def save_gml(self):
         if not self.bclean:
             self.clean() 
+        self.serialize()
         filename = self.origin.replace('.stp','.gml') 
         nx.write_gml(self,filename)                                                                                
+        self.unserialize()
 
     def write_components(self):
         r"""Write components of the assembly to their own step files in a
@@ -2088,11 +2098,17 @@ class Assembly(nx.DiGraph):
         #    pos = {k:(self.node[k]['ptc'][0],self[k]['ptc'][2]) for k in range(self.Nn)}
         pos = {k:(self.node[k]['ptc'][0],
                   self.node[k]['ptc'][1],
-                  self.node[k]['ptc'][2]) for k in range(self.Nn)}
+                  self.node[k]['ptc'][2]) for k in self.node}
 
-        xyz = np.array([pos[v] for v in sorted(self)])
-
-        labels = {k:self.node[k]['name'] for k in range(self.Nn)} 
+        xyz = np.array([pos[v] for v in sorted(self.node)])
+        # centering
+        xyz = xyz - np.mean(xyz,axis=0)
+        # scaling
+        xyz = xyz/xyz.max()
+        
+        
+        
+        labels = {k:self.node[k]['name'] for k in self.node} 
 
         #node_size = np.array([ self.node[k]['dim'] for k in range(self.Nn) ])
         #node_size = node_size*300/np.max(node_size)
