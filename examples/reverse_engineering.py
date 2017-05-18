@@ -137,7 +137,7 @@ def view_assembly_graph(x,fontsize=18,v=20,bsave=False,bshow=True,blabels=False,
     if bshow:
         plt.show()
 
-def view_assembly_nodes(x,node_index=[0],typ='original'):
+def view_assembly_nodes(x,node_index=[0]):
     """
     Parameters
     ----------
@@ -176,7 +176,7 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
     # The assembly structure is not supposed to save shapes themselves 
     # but only references to files (.py or .step) 
     #
-    lshapes1 = [x.node[k]['shape'] for k in node_index] 
+    #lshapes1 = [x.node[k]['shape'] for k in node_index] 
     # get the list of all filename associated with Assembly x
     lfiles = [x.node[k]['name']+'.stp' for k in node_index] 
     # select directory where node files are saved
@@ -200,17 +200,7 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
     # 2 : translation
     #
     for k,shp in enumerate(lshapes2): 
-        #print(type(shp))
-        #print lfiles[k]
-        #print lbmx[k]
         V = lV[k]
-        #print V
-        # print k,la.det(V)
-        # #bmirrorx = lbmx[k]
-        # q = cq.Quaternion()
-        # q.from_mat(V)
-        # vec, ang = q.vecang()
-        # print(vec,ang)
         shp.transform(V)
         # if 'mx' in x.node[k]:
         #     if x.node[k]['mx']:
@@ -230,10 +220,7 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
         shp.foreground=(1,1,0.5)
 
     # create a solid with the transformed shapes
-    if typ=='original': 
-        solid = cm.Solid(lshapes1)
-    else:
-        solid = cm.Solid(lshapes2)
+    solid = cm.Solid(lshapes2)
     ccad_viewer.set_background((1,1,1)) # White
     ccad_viewer.display(solid,transparency=0.5,material='copper')
     cd.start()
@@ -245,8 +232,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=level,
                         format='%(asctime)s :: %(levelname)6s :: '
                                '%(module)20s :: %(lineno)3d :: %(message)s')
-    #filename = "ASM0001_ASM_1_ASM.stp"  # OCC compound
-    filename = "MOTORIDUTTORE_ASM.stp" # OCC compound
+    filename = "ASM0001_ASM_1_ASM.stp"  # OCC compound
+    #filename = "MOTORIDUTTORE_ASM.stp" # OCC compound
     #filename = "0_tabby2.stp" # OCC compound
     #filename = "aube_pleine.stp"  # OCC Solid
 
@@ -254,7 +241,6 @@ if __name__ == "__main__":
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
     #x.node[7]['mz']=False
     #lsh,lV,lptm=view_assembly_nodes(x,node_index=[6,7],typ='splitted')
-    #lsh,lV,lptm=view_assembly_nodes(x,node_index=-1,typ='splitted')
 #    p6 = x.node[6]['pcloud']
 #    p6t = x.node[6]['pc']
 #    v6 = x.node[6]['V']
@@ -264,5 +250,7 @@ if __name__ == "__main__":
 #    u6 = np.dot(v6,p6)-p6t
 #    u7 = np.dot(v7,p7)-p7t
    
-    x.save_gml()
-    x.save_json()
+    #x.save_gml()
+    #x.save_json()
+    node_index=[0,1]
+    #lsh,lV,lptm=view_assembly_nodes(x,node_index=node_index)

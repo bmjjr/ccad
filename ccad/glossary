@@ -1,0 +1,217 @@
+Shape Fonctions 
+----------------
+s1 : shape
+ 
+ _translate(s1, pdir):
+ _rotate(s1, pabout, pdir, angle):
+ _transform(s1, U):
+ _mirror(s1, pabout, pdir):
+ _scale(s1, sx=1.0, sy=1.0, sz=1.0):
+ translated(s1, pdir):
+ rotated(s1, pabout, pdir, angle):
+ rotatedx(s1, angle):
+ rotatedy(s1, angle):
+ rotatedz(s1, angle):
+ mirrored(s1, pabout, pdir):
+ mirroredx(s1):
+ mirroredy(s1):
+ mirroredz(s1):
+ scaled(s1, sfx, sfy=None, sfz=None):
+ scaledx(s1, sfx):
+ scaledy(s1, sfy):
+ scaledz(s1, sfz):
+ reversed_(s1):
+ _raw_faces_same_domain(f1, f2, skip_fits=0):
+ _raw_faces_merge(f1, f2):
+ fuse(s1, s2, refine=0):
+ old_fuse(s1, s2):
+ cut(s1, s2, refine=0):
+ old_cut(s1, s2):
+ common(s1, s2, refine=0):
+ old_common(s1, s2):
+ _fillet_boolean(b1, rad):
+ fillet_fuse(s1, s2, rad):
+ fillet_cut(s1, s2, rad):
+ fillet_common(s1, s2, rad):
+ _chamfer_boolean(b1, dist):
+ chamfer_fuse(s1, s2, dist):
+ chamfer_cut(s1, s2, dist):
+ chamfer_common(s1, s2, dist):
+ glue(s1, s2, face_pairs=[]):
+ simple_glue(s1, s2, face_pairs=[], tolerance=1e-3):
+
+
+# Import Functions
+------------------
+
+ _convert_import(s):
+ from_brep(name):
+ from_iges(name):
+ from_step(name):
+ from_svg(name):
+     finish_wire():
+     strpt_to_float(strpt):
+     transform_matrix():
+     transform_pts(transform, pts):
+     vector_angle(u, v):
+ _raw_type(raw_shape):
+ signature(point_cloud):
+
+
+#Classes
+--------
+
+## Classe Part
+--------------
+
+     __init__(self, geometry, origin):
+     from_step(cls, step_filename):
+     from_py(cls, py_filename):
+     from_library(cls, url, name):
+     geometry(self):
+
+## Classe Assembly 
+------------------
+
+     __init__(self, solid, origin=None, direct=False):
+        direct : bool, optional(ault is False)
+     from_step(cls, filename, direct=False):
+        direct : bool, optional(ault is False)
+     tag_nodes(self):
+     clean(self):
+     serialize(self):
+     unserialize(self):
+     save_json(self):
+     load(self):
+     save_gml(self):
+     write_components(self):
+     show_graph(self,plane='yz'):
+     __repr__(self):
+
+## Classe Shape
+---------------
+
+     _raw_type(self):
+     to_brep(self, name):
+     to_iges(self, name, **options):
+     to_step(self, name, **options):
+     to_html(self, name, **options)
+	rendu dans le navigateur
+     translate(self, pdir):
+     rotate(self, pabout, pdir, angle):
+     rotatex(self, angle):
+     rotatey(self, angle):
+     rotatez(self, angle):
+     transform(self, U):
+     mirror(self, pabout, pdir):
+     mirrorx(self):
+     mirrory(self):
+     mirrorz(self):
+     scale(self, sfx, sfy=None, sfz=None):
+     scalex(self, sfx):
+     scaley(self, sfy):
+     scalez(self, sfz):
+     reverse(self):
+     _raw(self, raw_type):
+     _valid_subshapes(self, include_top=False):
+     _valid_subshape(self, stype):
+     subshapes(self, stype):
+     copy(self):
+     bounds(self):
+     center(self):
+     subcenters(self, stype):
+	Utile pour déterminet les points d'accrochage
+     check(self):
+     fix(self, precision=None, max_tolerance=None, min_tolerance=None):
+     dump(self, flat=True, _level=0):
+	Détail d'un objet 
+     nearest(self, stype, positions, eps=1e-12):
+     subtolerance(self, stype='all', ttype='all'):
+
+## Classe Vertex(Shape)
+-----------------------
+     __init__(self, s):
+     center(self):
+     tolerance(self):
+
+## Classe Edge(Shape) 
+---------------------
+     __init__(self, s):
+     center(self):
+     length(self):
+     tolerance(self):
+     type(self):
+	type (circle, ellipse,hyperbola,...) 
+     poly(self, deflection=1e-3):
+	polyline approximation of the curve
+
+## Wire(Shape)
+--------------
+     __init__(self, es):
+     center(self):
+     length(self):
+     poly(self, deflection=1e-3):
+
+## Face(Shape) 	A collection of edges
+-------------------------------------
+     __init__(self, s):
+     fillet(self, rad, vertex_indices=None):
+     wire(self):
+     inner_wires(self):
+     center(self):
+     area(self):
+     tolerance(self):
+     type(self):
+
+## Shell(Shape) A collection of faces
+-------------------------------------
+     __init__(self, fs, tolerance=1e-6):
+     center(self):
+     area(self):
+
+## Solid(Shape) A closed and filled shell
+-----------------------------------------
+     __init__(self, ss):
+     __add__(self, other):
+     __sub__(self, other):
+     __and__(self, other):
+     to_stl(self, name, **options):
+     center(self):
+     fillet(self, rad, edge_indices=None):
+     chamfer(self, dist, edge_indices=None):
+     draft(self, angle, pdir, pt, face_indices):
+     volume(self):
+     simplify(self, skip_edges=0, skip_faces=0, skip_fits=0,
+
+# Edge Primitives
+-----------------
+
+ segment(pt1, pt2):
+ arc(rad, start_angle, end_angle):
+ arc_ellipse(rad1, rad2, start_angle, end_angle):
+ spline(pts, **options):
+ bezier(pts, weights=[]):
+ circle(rad):
+ ellipse(rad1, rad2):
+ polygon(pts):
+ rectangle(dx, dy):
+ ngon(rad, n):
+ helix(rad, angle, turns, eps=1e-12):
+ plane(w1, inner_wires=[]):
+ face_from(f1, w1):
+ filling(w1, **options):
+ slice_(s1, x=None, y=None, z=None):
+ box(dx, dy, dz):
+ wedge(dx, dy, dz, lx, xmax=None, zmin=None, zmax=None):
+ cylinder(rad, height, angle=None):
+ sphere(rad, angle1=None, angle2=None, angle3=None):
+ cone(rad1, rad2, height, angle=None):
+ bezier_cone(rad1, rad2, height, angle=None):
+ torus(rad1, rad2, angle1=None, angle2=None, angle3=None):
+ prism(s, pdir):
+ revol(s, pabout, pdir, angle):
+ loft(ws, ruled=False, stype='Solid'):
+ plane_loft(ws, stype='Solid'):
+ pipe(profile, spine, continuous=False, transition='sharp',
+ helical_solid(profile, rad, angle, turns):
+ offset(s1, dist, tolerance=1e-3, join='arc', mode='skin'):

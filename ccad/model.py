@@ -850,9 +850,9 @@ def old_common(s1, s2):
 def _fillet_boolean(b1, rad):
     r"""
 
-
     Parameters
     ----------
+
     b1
     rad
 
@@ -1566,6 +1566,7 @@ def _raw_type(raw_shape):
 
     Parameters
     ----------
+
     raw_shape
 
     Returns
@@ -1596,17 +1597,17 @@ def signature(point_cloud):
     Parameters
     ----------
 
-    point_cloud : 2D numpy array
+    point_cloud : 3D numpy array
         the point cloud is centered
 
     Returns
     -------
-    tuple :
-        sig : str
-        V   :
-        ptc : middle point / barycentre of the point cloud
-        detV : +1 or -1 unitaryy matrix determinant
-        dim : homogeneous to meters : cubic root of profuct of all SV
+
+    pc  : point cloud 
+    sig : signature
+    dim : homogeneous to meters : cubic root of profuct of all SV
+    V   : Unitary matrix (3x3)
+    detV : +1 or -1 unitary matrix determinant
 
     """
     # sort point cloud along x to avoid permutation of points
@@ -1642,7 +1643,7 @@ def signature(point_cloud):
     else:
         sig = 'degenerated'    
    
-    return pc.T, sig,dim, V, detV
+    return pc.T, sig,dim,V,detV
 
 
 # Classes
@@ -1725,6 +1726,7 @@ class Part(object):
 
         Parameters
         ----------
+
         url : str
             The library url
         name : str
@@ -1732,6 +1734,7 @@ class Part(object):
 
         Returns
         -------
+
         Part : a new Part object created from the library
 
         Raises
@@ -1758,6 +1761,7 @@ class Part(object):
 
         Returns
         -------
+
         Solid
 
         """
@@ -1818,6 +1822,7 @@ class Assembly(nx.DiGraph):
         self.bclean = False
 
         shells = self.solid.subshapes("Shell")
+
         logger.info("%i shells in assembly" % len(shells))
         inode=0
         for k, shell in enumerate(shells):
@@ -1863,7 +1868,11 @@ class Assembly(nx.DiGraph):
             # update graph node with point cloud array 
             if len(vertices)>3:
                 self.pos[inode] = ptc
-                self.add_node(inode, pcloud=pcloud, shape=shell , dist=d[u], ptc = ptc)
+                self.add_node(inode,
+                        pcloud=pcloud, 
+                        shape=shell, 
+                        dist=d[u], 
+                        ptc = ptc)
                 inode +=1
 
     @classmethod
@@ -4441,6 +4450,7 @@ def torus(rad1, rad2, angle1=None, angle2=None, angle3=None):
 
     Parameters
     ----------
+
     rad1 : float
         distance from torus center to extruded circle center
     rad2 : float
@@ -4665,6 +4675,7 @@ def pipe(profile, spine, continuous=False, transition='sharp',
 
     Parameters
     ----------
+
     profile
     spine
     continuous : bool, optional (default is False)
@@ -4738,6 +4749,7 @@ def helical_solid(profile, rad, angle, turns):
 
     Parameters
     ----------
+
     profile :
     rad : float
         Helix radius
