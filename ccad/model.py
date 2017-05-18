@@ -32,9 +32,12 @@ from itertools import permutations, combinations
 import pdb
 import urllib
 import imp
+import json
 import mayavi.mlab as mlab 
 
 import networkx as nx
+from networkx.readwrite import json_graph
+
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as la
@@ -1625,18 +1628,21 @@ def signature(point_cloud):
     #if np.isclose(detV,-1):
     pc = np.dot(U[:,0:3],np.diag(S))
     #vec, ang = q.vecang()
-    dim =(S[0]*S[1]*S[2])**1/3.
+    dim =(S[0]*S[1]*S[2])**(1/3.)
     #logger.debug("Vec : %s" % str(vec))
     #logger.debug("Ang : %f" % ang)
 
-    S0 = str(int(np.ceil(S[0])))
-    S1 = str(int(np.ceil(S[1])))
-    S2 = str(int(np.ceil(S[2])))
+    if dim!=0:
+        D  = str(int(np.ceil(dim)))
+        S0 = str(int(np.ceil(S[0])))
+        S1 = str(int(np.ceil(S[1])))
+        S2 = str(int(np.ceil(S[2])))
 
-    sig = S0 + "_" + S1 + "_" + S2
-
+        sig = D+ "_"+ S0 + "_" + S1 + "_" + S2
+    else:
+        sig = 'degenerated'    
    
-    return pc.T, sig, V, detV,  dim
+    return pc.T, sig,dim, V, detV
 
 
 # Classes
@@ -1809,6 +1815,7 @@ class Assembly(nx.DiGraph):
         self.solid = solid
         self.pos = dict()
         self.origin = origin
+        self.bclean = False
 
         shells = self.solid.subshapes("Shell")
         logger.info("%i shells in assembly" % len(shells))
@@ -1921,49 +1928,102 @@ class Assembly(nx.DiGraph):
 
 
         self.lsig = [] 
+        to_be_deleted = []
         for k in self.node:
             pcloud = self.node[k]['pcloud']
             if pcloud.shape[1]>3:
-                pc , sig, V, detV , dim = signature(pcloud)
-                lsamek = [ x for x in self.edge[k].keys() if self.edge[k][x]['equal']]
+                pc , sig, dim, V, detV  = signature(pcloud)
+                if sig!='degenerated':
 
-                if lsamek==[]:
-                    self.lsig.append(sig)
-                    self.node[k]['name'] = sig
-                    # self.node[k]['V'] = V
-                    # self.node[k]['dim'] = dim
-                else: 
-                    refnode = [x for x in lsamek if self.edge[x].keys()==[]][0]
-                    self.node[k]['name'] = self.node[refnode]['name']
-                    pcsame = self.node[refnode]['pc']
-                    # self.node[k]['V']= self.node[refnode]['V']
-                    # self.node[k]['dim']= self.node[refnode]['dim']
-                    #
-                    # detection of eventual symmetry 
-                    #
-                    # The symmetry is informed in the node
-                    #
-                    
-                        
-                    dp = np.sum(np.abs(pcsame-pc),axis=1)
-                    nomirror = np.isclose(dp,0)
-                    if nomirror[0]==False:
-                        self.add_node(k,mx=True)
-                    if nomirror[1]==False:
-                        self.add_node(k,my=True)
-                    if nomirror[2]==False:
-                        self.add_node(k,mz=True)
+                    lsamek = [ x for x in self.edge[k].keys() if self.edge[k][x]['equal']]
 
-                self.node[k]['V'] = V
-                self.node[k]['dim'] = dim
-                self.node[k]['pc'] = pc
-                
+                    if lsamek==[]:
+                        self.lsig.append(sig)
+                        self.node[k]['name'] = sig
+                        # self.node[k]['V'] = V
+                        # self.node[k]['dim'] = dim
+                    else: 
+                        refnode = [x for x in lsamek if self.edge[x].keys()==[]][0]
+                        self.node[k]['name'] = self.node[refnode]['name']
+                        pcsame = self.node[refnode]['pc']
+
+                        # self.node[k]['V']= self.node[refnode]['V']
+                        # self.node[k]['dim']= self.node[refnode]['dim']
+                        #
+                        # detection of eventual symmetry 
+                        #
+                        # The symmetry is informed in the node
+                        #
+                            
+                        dp = np.sum(np.abs(pcsame-pc),axis=1)
+                        nomirror = np.isclose(dp,0)
+                        if nomirror[0]==False:
+                            self.add_node(k,mx=True)
+                        if nomirror[1]==False:
+                            self.add_node(k,my=True)
+                        if nomirror[2]==False:
+                            self.add_node(k,mz=True)
+
+                    self.node[k]['V'] = V
+                    self.node[k]['pc'] = pc
+                    self.node[k]['dim'] = int(np.ceil(dim))
+                else:
+                    to_be_deleted.append(k)
                  
             else: # point cloud contains less than 4 points
                 print(k,pcloud.shape)
+        
+        self.remove_nodes_from(to_be_deleted)
+
         self.lsig=list(set(self.lsig))
         self.Nn = len(self.node)
         
+    def clean(self):
+        """
+        Clean temporay data before serializing the graph 
+        """
+        for (n,d) in self.nodes(data=True):
+            del d['pcloud']
+            del d['shape']
+            del d['dist']
+            del d['pc']
+            V = d['V']
+            ptc = d['ptc']
+            #nbig = 1e12
+            # lV = str(list((d['V'].ravel()*nbig).astype(int)))
+            # lptc = str(list((d['ptc']*nbig).astype(int)))
+            # ptcr = np.array(eval(lptc))/nbig
+            # Vr = np.array(eval(lV)).reshape(3,3)
+            # Vr = Vr/nbig
+
+            lV = str(list((d['V'].ravel())))
+            lptc = str(list((d['ptc'])))
+            ptcr = np.array(eval(lptc))
+            Vr = np.array(eval(lV)).reshape(3,3)
+            # Vr = Vr/nbig
+            
+            assert(np.isclose(V-Vr,0).all())
+            assert(np.isclose(ptc-ptcr,0).all())
+            d['V']=lV
+            d['ptc']=lptc
+        # set a boolean for not cleaning twice
+        self.bclean = True
+    
+    def save_json(self):
+        if not self.bclean:
+            self.clean
+        data = json_graph.node_link_data(self)
+        filename = self.origin.replace('.stp','.json') 
+        fd = open(filename,'w')
+        with fd: 
+            json.dump(data,fd)
+        
+
+    def save_gml(self):
+        if not self.bclean:
+            self.clean() 
+        filename = self.origin.replace('.stp','.gml') 
+        nx.write_gml(self,filename)                                                                                
 
     def write_components(self):
         r"""Write components of the assembly to their own step files in a
@@ -1993,67 +2053,21 @@ class Assembly(nx.DiGraph):
             ptc = self.node[k]['ptc']
             # get the unitary transformation from node k
             V = self.node[k]['V']
-            #bmirrorx = self.node[k]['bmirrorx']
-            # detV = la.det(V)
-            # q = cq.Quaternion()
-            # q.from_mat(V)
-            # vec, ang = q.vecang()
 
             # get the shape from node k 
             shp = self.node[k]['shape']
             # if the point cloud contains more than 3 points
             if pcloud.shape[1]>3:
-                # from point cloud get 
-                #
-                # sig : signature
-                # V   : 
-                # ptc : centroid point 
-                # q   : quaternion 
-                # vec : vector 
-                # ang : rotation angle
-
-    
                 filename = sig + ".stp"
                 filename = os.path.join(subdirectory, filename)
-                #print(filename)
                 # If filename does not exist then save the transformed shape 
-                #  Translation 
-                #  Unitary transformation 
+                #  Translation + Unitary transformation (_transform) 
                 # in a new step file
                 if not os.path.isfile(filename):
                     shp.translate(-ptc)
                     shp.transform(V.T)
-                    #shp.rotate(np.array([0, 0, 0]), vec, ang)
-
-                    # if 'mx' in self.node:
-                    #     if self.node[k]['mx']:
-                    #         shp.mirrorx()
-
                     shp.to_step(filename)
-                # else:
-                #     # 
-                #     #  p1 = q1.V1
-                #     #  p2 = q2.V2
-                #     #
-                #     #  q2 = q1.M 
-                #     #  p2 = q1.M.V2  
-                #     pass
-                # # read the saved shape
-                # # update the node transformation 
-                #     saved_solid = from_step(filename) 
-                #     # get vertices from saved solid
-                #     vertices = saved_solid.subshapes("Vertex")
-                #     # stack vertices from saved solid in a point cloud 2
-                #     #pcloud1 = pcloud - ptc[:,None] 
-                #     pcloud1 = np.ndarray(shape=(3,0))
-                #     for vertex in vertices:
-                #         point = np.array(vertex.center())[:, None]
-                #         pcloud1 = np.hstack((pcloud1, point))
-                #     # verify that pcloud 2 is centered     
-                #     np.testing.assert_almost_equal(np.sum(pcloud1,1),np.zeros(3))
-                #     R = np.dot(la.pinv(pcloud1),pcloud)
-                #     print("Determinant : ",la.det(R))
-                #     #pdb.set_trace()
+                
 
     def show_graph(self,plane='yz'):
         r""" networkx graph vizualization 

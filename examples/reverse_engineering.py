@@ -132,7 +132,7 @@ def view_assembly_nodes(x,node_index=[0],typ='original'):
 
     # get the local frame shapes from the list .step files  
     lshapes2 = [cm.from_step(os.path.join(rep,s)) for s in lfiles] 
-    pdb.set_trace()
+    
 
     # get unitary matrix and translation for global frame placement
     lV   = [x.node[k]['V'] for k in node_index] 
@@ -190,41 +190,59 @@ if __name__ == "__main__":
                         format='%(asctime)s :: %(levelname)6s :: '
                                '%(module)20s :: %(lineno)3d :: %(message)s')
     #filename = "ASM0001_ASM_1_ASM.stp"  # OCC compound
-    #filename = "MOTORIDUTTORE_ASM.stp" # OCC compound
-    filename = "0_tabby2.stp" # OCC compound
+    filename = "MOTORIDUTTORE_ASM.stp" # OCC compound
+    #filename = "0_tabby2.stp" # OCC compound
     #filename = "aube_pleine.stp"  # OCC Solid
 
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
-    x.node[7]['mz']=False
+    #x.node[7]['mz']=False
     #lsh,lV,lptm=view_assembly_nodes(x,node_index=[6,7],typ='splitted')
     #lsh,lV,lptm=view_assembly_nodes(x,node_index=-1,typ='splitted')
-    p6 = x.node[6]['pcloud']
-    p6t = x.node[6]['pc']
-    v6 = x.node[6]['V']
-    p7 = x.node[7]['pcloud']
-    p7t = x.node[7]['pc']
-    v7 = x.node[7]['V']
-    u6 = np.dot(v6,p6)-p6t
-    u7 = np.dot(v7,p7)-p7t
+#    p6 = x.node[6]['pcloud']
+#    p6t = x.node[6]['pc']
+#    v6 = x.node[6]['V']
+#    p7 = x.node[7]['pcloud']
+#    p7t = x.node[7]['pc']
+#    v7 = x.node[7]['V']
+#    u6 = np.dot(v6,p6)-p6t
+#    u7 = np.dot(v7,p7)-p7t
     v = 20
     dxy = { k : (x.pos[k][0],x.pos[k][1]) for k in x.node.keys() }
     dxyl = { k : (x.pos[k][0]+(v*np.random.rand()-v/2.),x.pos[k][1]+(v*np.random.rand()-v/2.)) for k in x.node.keys() }
     dxz = { k : (x.pos[k][0],x.pos[k][2]) for k in x.node.keys() }
     dxzl = { k : (x.pos[k][0]+(v*np.random.rand()-v/2),x.pos[k][2]+(v*np.random.rand()-v/2.)) for k in x.node.keys() }
-    dyz = { k : (x.pos[k][1],x.pos[k][2]) for k in x.node.keys() }
-    dyzl = { k : (x.pos[k][1]+(v*np.random.rand()-v/2),x.pos[k][2]+(v*np.random.rand()-v/2.)) for k in x.node.keys() }
+    dyz = { k : (x.pos[k][2],x.pos[k][1]) for k in x.node.keys() }
+    dyzl = { k : (x.pos[k][2]+(v*np.random.rand()-v/2),x.pos[k][1]+(v*np.random.rand()-v/2.)) for k in x.node.keys() }
+    node_size = [ x.node[k]['dim'] for k in x.node.keys() ]
+    #dlab = {k : str(int(np.ceil(x.node[k]['dim']))) for k in x.node.keys() if x.edge[k].keys()==[] }
     dlab = {k : x.node[k]['name'] for k in x.node.keys() }
+    fontsize=18
+    plt.figure(figsize=(10,10))
+    plt.suptitle(x.origin,fontsize=fontsize+2)
     plt.subplot(2,2,1)
-    nx.draw_networkx_nodes(x,dxy)
+    nx.draw_networkx_nodes(x,dxy,node_size=node_size,alpha=0.5)
     nx.draw_networkx_edges(x,dxy)
-    nx.draw_networkx_labels(x,dxyl,labels=dlab)
+    nx.draw_networkx_labels(x,dxyl,labels=dlab,font_size=fontsize)
+    plt.xlabel('X axis (mm)')
+    plt.ylabel('Y axis (mm)')
+    plt.title("XY plane")
     plt.subplot(2,2,2)
-    nx.draw_networkx_nodes(x,dxz)
-    nx.draw_networkx_edges(x,dxz)
-    nx.draw_networkx_labels(x,dxzl,labels=dlab)
-    plt.subplot(2,2,3)
-    nx.draw_networkx_nodes(x,dyz)
+    nx.draw_networkx_nodes(x,dyz,node_size=node_size,alpha=0.5)
     nx.draw_networkx_edges(x,dyz)
-    nx.draw_networkx_labels(x,dyzl,labels=dlab)
+    nx.draw_networkx_labels(x,dyzl,labels=dlab,font_size=fontsize)
+    plt.xlabel('Z axis (mm)')
+    plt.ylabel('Y axis (mm)')
+    plt.title("ZY plane")
+    plt.subplot(2,2,3)
+    nx.draw_networkx_nodes(x,dxz,node_size=node_size,alpha=0.5)
+    nx.draw_networkx_edges(x,dxz)
+    nx.draw_networkx_labels(x,dxzl,labels=dlab,font_size=fontsize)
+    plt.title("XZ plane")
+    plt.xlabel('X axis (mm)')
+    plt.ylabel('Z axis (mm)')
+    plt.subplot(2,2,4)
+    nx.draw(x,labels=dlab,alpha=0.5,font_size=fontsize,node_size=node_size)
     plt.show()
+    x.save_gml()
+    x.save_json()
