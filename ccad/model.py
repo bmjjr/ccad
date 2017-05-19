@@ -2373,10 +2373,12 @@ class Shape(object):
         else:
             w.Write(name)
 
-    def to_html(self, name, vertex_shader=None, fragment_shader=None,
-                export_edges=False, color=(0.65, 0.65, 0.65),
-                specular_color=(1, 1, 1), shininess=0.9, transparency=0.,
-                line_color=(0, 0., 0.), line_width=2., mesh_quality=1.):
+    #def to_html(self, name, vertex_shader=None, fragment_shader=None,
+    #            export_edges=False, color=(0.65, 0.65, 0.65),
+    #            specular_color=(1, 1, 1), shininess=0.9, transparency=0.,
+    #            line_color=(0, 0., 0.), line_width=2., mesh_quality=1.):
+
+    def to_html(self, name, **options):
         r"""Generates an html file to view the Shape in the browser
 
         Parameters
@@ -2397,6 +2399,22 @@ class Shape(object):
         mesh_quality : float
 
         """
+        defaults = {'vertex_shader':None,
+                  'fragment_shader':None,
+                  'export_edges':False,
+                  'color':(0.65,0.65,0.65),
+                  'specular_color':(1,1,1),
+                  'shininess'=0.9,
+                  'transparency'=0,
+                  "line_color":(0,0,0),
+                  "line_width":2.,
+                  "mesh_quality":1
+                  }
+        for k in defaults: 
+            if k not in options:
+                options[k]=defaults[k]
+
+
         class X3DomRendererCustomized(X3DomRenderer):
             r"""Customized version of X3DomRenderer where the html file name can
             be specified"""
@@ -2407,10 +2425,17 @@ class Shape(object):
                 self._x3d_shapes = []
 
         renderer = X3DomRendererCustomized(name)
-        renderer.DisplayShape(self.shape, vertex_shader, fragment_shader,
-                              export_edges, color, specular_color, shininess,
-                              transparency, line_color, line_width,
-                              mesh_quality)
+        renderer.DisplayShape(self.shape, 
+                              options['vertex_shader'], 
+                              options['fragment_shader'],
+                              options['export_edges'], 
+                              options['color'], 
+                              options['specular_color'],
+                              options['shininess'],
+                              options['transparency'],
+                              options['line_color'],
+                              options['line_width'],
+                              options['mesh_quality'])
         renderer.GenerateHTMLFile()
 
     def translate(self, pdir):
@@ -3733,6 +3758,11 @@ class Solid(Shape):
                     self.shape = new_shell
 
 
+class Polyhedron(Solid):
+
+    def __init__(self):
+
+
 """
 Primitives
 ----------
@@ -4247,7 +4277,21 @@ def slice_(s1, x=None, y=None, z=None):
     return s2.subshapes('Face')
 
 
-# Solid Primitives
+# Solid Primitives from BRepPrimAPi 
+#
+#   Box x 
+#   Cone x
+#   Cylinder x
+#   Half Space (TODO ? ) 
+#   OneAxis (TODO ? ) 
+#   Prism x 
+#   Revol x 
+#   Revolution (??) 
+#   Sphere x 
+#   Sweep (TODO ?) 
+#   Torus 
+#   Wedge 
+
 
 def box(dx, dy, dz):
     """
