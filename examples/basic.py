@@ -9,7 +9,11 @@ Probably the simplest example of using ccad
 
 import ccad.model as cm
 import ccad.display as cd
-s1 = cm.sphere(2.0)
+import numpy as np 
+s1 = cm.box(2.0,2.0,2.0)
+s1.chamfer(0.5)
+lver = s1.subshapes('Vertex')
+[ np.array(x.center()) for x in lver]
 v1 = cd.view()
 v1.display(s1)
 cd.start()

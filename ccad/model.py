@@ -2404,8 +2404,8 @@ class Shape(object):
                   'export_edges':False,
                   'color':(0.65,0.65,0.65),
                   'specular_color':(1,1,1),
-                  'shininess'=0.9,
-                  'transparency'=0,
+                  'shininess':0.9,
+                  'transparency':0,
                   "line_color":(0,0,0),
                   "line_width":2.,
                   "mesh_quality":1
@@ -3757,10 +3757,6 @@ class Solid(Shape):
                         _raw_type(new_shell))
                     self.shape = new_shell
 
-
-class Polyhedron(Solid):
-
-    def __init__(self):
 
 
 """
