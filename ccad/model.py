@@ -1195,7 +1195,7 @@ def from_step(name):
         # print('Error: Can\'t find', name)
 
 
-def from_(name):
+def from_svg(name):
     """
     Imports a 2D svg file, converts each graphics path into a wire,
     and returns a list of wires.
