@@ -1195,7 +1195,7 @@ def from_step(name):
         # print('Error: Can\'t find', name)
 
 
-def from_svg(name):
+def from_(name):
     """
     Imports a 2D svg file, converts each graphics path into a wire,
     and returns a list of wires.
@@ -2024,45 +2024,28 @@ class Shape(object):
         else:
             w.Write(name)
 
-    def to_html(self, name, vertex_shader=None, fragment_shader=None,
-                export_edges=False, color=(0.65, 0.65, 0.65),
-                specular_color=(1, 1, 1), shininess=0.9, transparency=0.,
-                line_color=(0, 0., 0.), line_width=2., mesh_quality=1.):
+    def to_html(self, filename_html):
         r"""Generates an html file to view the Shape in the browser
 
         Parameters
         ----------
-        name : str
+        filename_html : str
             name of the html file
-        vertex_shader : str
-        fragment_shader : str
-        export_edges : bool
-        color : tuple
-        specular_color : tuple
-        shininess : float
-            Between 0. and 1.
-        transparency: float
-            Between 0. and 1.
-        line_color : tuple
-        line_width : int
-        mesh_quality : float
-
         """
         class X3DomRendererCustomized(X3DomRenderer):
             r"""Customized version of X3DomRenderer where the html file name can
             be specified"""
-            def __init__(self, path):
-                # Intentionally not calling superclass constructor
-                self._path = os.path.dirname(path)
-                self._html_filename = path
-                self._x3d_shapes = []
+            def __init__(self, path_, background_color="#123345"):
+                # Intentionally not calling super constructor
+                self._background_color = background_color
+                name_no_extension, _ = os.path.splitext(os.path.basename(path_))
+                self._folder_path = os.path.dirname(path_)
+                self._x3d_filename = os.path.join(self._folder_path,
+                                                  '%s.x3d' % name_no_extension)
+                self._html_filename = path_
 
-        renderer = X3DomRendererCustomized(name)
-        renderer.DisplayShape(self.shape, vertex_shader, fragment_shader,
-                              export_edges, color, specular_color, shininess,
-                              transparency, line_color, line_width,
-                              mesh_quality)
-        renderer.GenerateHTMLFile()
+        renderer = X3DomRendererCustomized(path_=filename_html)
+        renderer.create_files(shape=self.shape)
 
     def translate(self, pdir):
         """
