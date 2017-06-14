@@ -33,7 +33,7 @@ import pdb
 import urllib
 import imp
 import json
-import mayavi.mlab as mlab 
+#import mayavi.mlab as mlab 
 
 import networkx as nx
 from networkx.readwrite import json_graph
@@ -4378,6 +4378,27 @@ def cylinder(rad, height, angle=None):
         return Solid(_BRepPrimAPI.BRepPrimAPI_MakeCylinder(
                 rad, height, angle).Shape())
 
+def half_space(p,v):
+    """
+    Make a Half Space with a Face and a Point  
+
+    Parameters
+    ----------
+    vdir : (,3) 
+        direction 
+    p : (,3)  
+        point 
+
+    Returns
+    -------
+
+    Solid
+
+    """
+
+    refpnt = _gp.gp_Pnt(p[0], p[1], p[2])
+    return Solid(_BRepPrimAPI.BRepPrimAPI_MakeCylinder(
+             face, refpnt).Shape())
 
 def sphere(rad, angle1=None, angle2=None, angle3=None):
     """
