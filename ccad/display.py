@@ -35,10 +35,11 @@ import math as _math
 import logging
 
 try:
-    from PyQt4 import QtCore as _QtCore, QtGui as _QtGui
+    # from PyQt4 import QtCore as _QtCore, QtGui as _QtGui
+    from PyQt5 import QtCore, QtWidgets
 except ImportError:
     try:
-        from PySide import QtCore as _QtCore, QtGui as _QtGui
+        from PySide import QtCore, QtGui as QtWidgets
     except:
         manager = 'none'
         print("""
@@ -98,7 +99,7 @@ app = None
 logger = logging.getLogger(__name__)
 
 
-class ViewQt(_QtGui.QWidget):
+class ViewQt(QtWidgets.QWidget):
     """A Qt based viewer"""
 
     def __init__(self, perspective=False):
@@ -106,11 +107,11 @@ class ViewQt(_QtGui.QWidget):
         super(ViewQt, self).__init__()
         self.setMouseTracking(True)
         # self.setFocusPolicy(_QtCore.Qt.WheelFocus)
-        # self.setSizePolicy(_QtGui.QSizePolicy(_QtGui.QSizePolicy.Ignored,
-        #                                       _QtGui.QSizePolicy.Ignored))
+        # self.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Ignored,
+        #                                       QtGui.QSizePolicy.Ignored))
 
-        self.REGULAR_CURSOR = _QtCore.Qt.ArrowCursor
-        self.WAIT_CURSOR = _QtCore.Qt.WaitCursor
+        self.REGULAR_CURSOR = QtCore.Qt.ArrowCursor
+        self.WAIT_CURSOR = QtCore.Qt.WaitCursor
 
         self.key_table = {'redraw()': 'PgUp',
                           'orbitup()': 'Up',
@@ -147,28 +148,28 @@ class ViewQt(_QtGui.QWidget):
         self.menus = {}
 
         # Vertical Container
-        vbox1 = _QtGui.QVBoxLayout()
-        vbox1.setMargin(0)
+        vbox1 = QtWidgets.QVBoxLayout()
+        vbox1.setContentsMargins(0, 0, 0, 0)
         vbox1.setSpacing(0)
 
         # Menu Space
-        self.menubar = _QtGui.QMenuBar()
+        self.menubar = QtWidgets.QMenuBar()
         vbox1.setMenuBar(self.menubar)
 
         # File
-        file_menu = _QtGui.QMenu('&File', self)
+        file_menu = QtWidgets.QMenu('&File', self)
         self.menubar.addMenu(file_menu)
 
         file_menu.addAction('&Save', self.save)
         file_menu.addAction('&Quit', self.quit, self.key_lookup('quit()'))
 
         # view
-        view_menu = _QtGui.QMenu('&View', self)
+        view_menu = QtWidgets.QMenu('&View', self)
         self.menubar.addMenu(view_menu)
 
-        view_mode = _QtGui.QMenu('Mode', self)
+        view_mode = QtWidgets.QMenu('Mode', self)
         view_menu.addMenu(view_mode)
-        view_mode_container = _QtGui.QActionGroup(self)
+        view_mode_container = QtWidgets.QActionGroup(self)
         view_mode_wireframe = view_mode.addAction('Wireframe',
                                                   self.mode_wireframe)
         view_mode_wireframe.setCheckable(True)
@@ -182,7 +183,7 @@ class ViewQt(_QtGui.QWidget):
         view_mode_hlr.setCheckable(True)
         view_mode_container.addAction(view_mode_hlr)
 
-        view_side = _QtGui.QMenu('Side', self)
+        view_side = QtWidgets.QMenu('Side', self)
         view_menu.addMenu(view_side)
         view_side.addAction('Front', lambda view='front': self.viewstandard(view),
                             self.key_lookup('viewstandard("front")'))
@@ -197,7 +198,7 @@ class ViewQt(_QtGui.QWidget):
         view_side.addAction('Left', lambda view='left': self.viewstandard(view),
                             self.key_lookup('viewstandard("left")'))
 
-        view_orbit = _QtGui.QMenu('Orbit', self)
+        view_orbit = QtWidgets.QMenu('Orbit', self)
         view_menu.addMenu(view_orbit)
         view_orbit.addAction('Up', self.orbitup, self.key_lookup('orbitup()'))
         view_orbit.addAction('Down', self.orbitdown, self.key_lookup('orbitdown()'))
@@ -206,14 +207,14 @@ class ViewQt(_QtGui.QWidget):
         view_orbit.addAction('CCW', self.rotateccw, self.key_lookup('rotateccw()'))
         view_orbit.addAction('CW', self.rotatecw, self.key_lookup('rotatecw()'))
 
-        view_pan = _QtGui.QMenu('Pan', self)
+        view_pan = QtWidgets.QMenu('Pan', self)
         view_menu.addMenu(view_pan)
         view_pan.addAction('Up', self.panup, self.key_lookup('panup()'))
         view_pan.addAction('Down', self.pandown, self.key_lookup('pandown()'))
         view_pan.addAction('Left', self.panleft, self.key_lookup('panleft()'))
         view_pan.addAction('Right', self.panright, self.key_lookup('panright()'))
 
-        view_zoom = _QtGui.QMenu('Zoom', self)
+        view_zoom = QtWidgets.QMenu('Zoom', self)
         view_menu.addMenu(view_zoom)
         view_zoom.addAction('In', self.zoomin, self.key_lookup('zoomin()'))
         view_zoom.addAction('Out', self.zoomout, self.key_lookup('zoomout()'))
@@ -222,9 +223,9 @@ class ViewQt(_QtGui.QWidget):
         view_menu.addAction('Redraw', self.redraw, self.key_lookup('redraw()'))
 
         # select
-        select_menu = _QtGui.QMenu('&Select', self)
+        select_menu = QtWidgets.QMenu('&Select', self)
         self.menubar.addMenu(select_menu)
-        select_container = _QtGui.QActionGroup(self)
+        select_container = QtWidgets.QActionGroup(self)
 
         select_vertex = select_menu.addAction('Select Vertex',
                                               self.select_vertex)
@@ -251,7 +252,7 @@ class ViewQt(_QtGui.QWidget):
         select_menu.addAction('Query', self.query, self.key_lookup('query()'))
 
         # help
-        help_menu = _QtGui.QMenu('&Help', self)
+        help_menu = QtWidgets.QMenu('&Help', self)
         self.menubar.addMenu(help_menu)
         help_menu.addAction('&Manual', self.display_manual)
         help_menu.addAction('&About', self.about)
@@ -261,7 +262,7 @@ class ViewQt(_QtGui.QWidget):
         vbox1.addWidget(self.glarea)
 
         # Status Line
-        self.status_bar = _QtGui.QLabel()
+        self.status_bar = QtWidgets.QLabel()
         self.status_bar.setText('')
         vbox1.addWidget(self.status_bar)
 
@@ -293,7 +294,7 @@ class ViewQt(_QtGui.QWidget):
         last_menu = self.menubar
         for sub_menu in hierarchy:
             if sub_menu not in self.menus:
-                menu = _QtGui.QMenu(sub_menu, self)
+                menu = QtWidgets.QMenu(sub_menu, self)
                 last_menu.addMenu(menu)
                 self.menus[sub_menu] = menu
             last_menu = self.menus[sub_menu]
@@ -372,7 +373,7 @@ class ViewQt(_QtGui.QWidget):
         event
 
         """
-        if event.button() == _QtCore.Qt.RightButton:  # Selection
+        if event.button() == QtCore.Qt.RightButton:  # Selection
             self.glarea.occ_context.Select()
             self.glarea.occ_context.InitSelected()
             if self.glarea.occ_context.MoreSelected():
@@ -394,10 +395,10 @@ class ViewQt(_QtGui.QWidget):
         x, y = pos.x(), pos.y()
         # Mouse-Controlled Projection
         # ComputedModes are too slow to redraw, so disabled for them
-        if (event.buttons() & _QtCore.Qt.MidButton) and \
+        if (event.buttons() & QtCore.Qt.MidButton) and \
                 not self.glarea.occ_view.ComputedMode():
             # Mouse-Controlled Pan
-            if event.modifiers() & _QtCore.Qt.ShiftModifier:
+            if event.modifiers() & QtCore.Qt.ShiftModifier:
                 self.glarea.occ_view.Pan(x - self.beginx, -y + self.beginy)
                 self.beginx, self.beginy = x, y
             else:  # Mouse-Controlled Orbit
@@ -1098,9 +1099,7 @@ class ViewQt(_QtGui.QWidget):
     def about(self):
         """Pops up a window about ccad"""
         global version
-        _QtGui.QMessageBox.about(
-            self,
-            'ccad viewer ' + str(version),
+        QtWidgets.QMessageBox.about(self, 'ccad viewer ' + str(version),
             '\251 Copyright 2015 by Charles Sharman and Others')
 
     def save(self, name=''):
@@ -1117,7 +1116,7 @@ class ViewQt(_QtGui.QWidget):
             filename = name
         else:
             filename = str(
-                _QtGui.QFileDialog.getSaveFileName(
+                QtWidgets.QFileDialog.getSaveFileName(
                     self,
                     'Save Screen Image',
                     '.',
@@ -1167,17 +1166,17 @@ class ViewQt(_QtGui.QWidget):
             self.close()
 
 
-class GLWidget(_QtGui.QWidget):
+class GLWidget(QtWidgets.QWidget):
     """A ccad canvas"""
 
     def __init__(self, parent=None):
         super(GLWidget, self).__init__(parent)
         self.setMouseTracking(True)
-        # self.setFocusPolicy(_QtCore.Qt.WheelFocus)
-        self.setAttribute(_QtCore.Qt.WA_PaintOnScreen)
-        self.setAttribute(_QtCore.Qt.WA_NoSystemBackground)
-        self.setSizePolicy(_QtGui.QSizePolicy(_QtGui.QSizePolicy.Expanding,
-                                              _QtGui.QSizePolicy.Expanding))
+        # self.setFocusPolicy(QtCore.Qt.WheelFocus)
+        self.setAttribute(QtCore.Qt.WA_PaintOnScreen)
+        self.setAttribute(QtCore.Qt.WA_NoSystemBackground)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                                 QtWidgets.QSizePolicy.Expanding))
         self.occ_view = None
         self.SCR = (400, 400)
 
@@ -1211,7 +1210,7 @@ class GLWidget(_QtGui.QWidget):
 
     def sizeHint(self):
         r"""<>"""
-        return _QtCore.QSize(self.SCR[0], self.SCR[1])
+        return QtCore.QSize(self.SCR[0], self.SCR[1])
 
     def paintEvent(self, event):
         r"""<>
@@ -1264,7 +1263,7 @@ def view(perspective=False):
 
     if manager == 'qt':
         if not app:
-            app = _QtGui.QApplication([])
+            app = QtWidgets.QApplication([])
         v1 = ViewQt(perspective)
         return v1
     else:

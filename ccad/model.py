@@ -55,9 +55,10 @@ from OCC import BRepBuilderAPI as _BRepBuilderAPI
 from OCC.BRepCheck import BRepCheck_Analyzer as _BRepCheck_Analyzer
 from OCC.BRepFeat import BRepFeat_Gluer as _BRepFeat_Gluer
 from OCC import BRepFilletAPI as _BRepFilletAPI
-from OCC.BRepGProp import (brepgprop_VolumeProperties as _brepgprop_VolumeProperties,
-                           brepgprop_LinearProperties as _brepgprop_LinearProperties,
-                           brepgprop_SurfaceProperties as _brepgprop_SurfaceProperties)
+from OCC.BRepGProp import\
+    (brepgprop_VolumeProperties as _brepgprop_VolumeProperties,
+     brepgprop_LinearProperties as _brepgprop_LinearProperties,
+     brepgprop_SurfaceProperties as _brepgprop_SurfaceProperties)
 from OCC import BRepOffsetAPI as _BRepOffsetAPI
 from OCC import BRepOffset as _BRepOffset
 from OCC import BRepPrimAPI as _BRepPrimAPI
@@ -654,9 +655,11 @@ def _raw_faces_merge(f1, f2):
     # sometimes don't.  Truncate c1s, c2s
     # accordingly. ***
     if len(c1s) == 0:
-        print('No common edges')
+        # print('No common edges')
+        logger.info('No common edges')
     if len(c1s) > 1:
-        print('c1-', c1s, c2s, len(e1s), len(e2s))
+        # print('c1-', c1s, c2s, len(e1s), len(e2s))
+        logger.info(str(('c1-', c1s, c2s, len(e1s), len(e2s))))
         min_index = 0
         max_index = 0
         while (max_index < len(c1s) - 1 and
@@ -672,7 +675,8 @@ def _raw_faces_merge(f1, f2):
         else:
             c1s = c1s[:max_index + 1]
             c2s = c2s[:max_index + 1]
-        print('c1+', c1s, c2s, len(e1s), len(e2s))
+        # print('c1+', c1s, c2s, len(e1s), len(e2s))
+        logger.info(str(('c1+', c1s, c2s, len(e1s), len(e2s))))
     # Create the merged wire
     b = _BRepBuilderAPI.BRepBuilderAPI_MakeWire()
     ds = []
@@ -1057,7 +1061,8 @@ def glue(s1, s2, face_pairs=[]):
     s1f = s1._raw('Face')
     s2f = s2._raw('Face')
     if len(face_pairs) == 0:
-        print('Error: Haven\'t implemented locate glued faces')
+        # print('Error: Haven\'t implemented locate glued faces')
+        logger.error('Error: Haven\'t implemented locate glued faces')
         return
         # This was expensive and didn't work.  I believe intersections
         # occurred at edge coincidences.  I may want to try
@@ -1131,7 +1136,8 @@ def simple_glue(s1, s2, face_pairs=[], tolerance=1e-3):
         b2.Add(_TopoDS_shell(new_shell))
         return Solid(b2.Solid())
     elif _raw_type(new_shell) == 'compound':
-        print('Warning: simple_glue() returned compound')
+        # print('Warning: simple_glue() returned compound')
+        logger.warning('Warning: simple_glue() returned compound')
         s = Solid(new_shell)
         css = s._raw('Shell')
         c = _TopoDS_compound()
@@ -1143,7 +1149,8 @@ def simple_glue(s1, s2, face_pairs=[], tolerance=1e-3):
             b3.Add(c, b2.Solid())
         return Solid(c)
     else:
-        print('Warning: Wrong sewed shape after simple_glue():', end='')
+        # print('Warning: Wrong sewed shape after simple_glue():', end='')
+        logger.warning('Warning: Wrong sewed shape after simple_glue():')
         _raw_type(new_shell)
         return Solid(new_shell)
 
@@ -1192,7 +1199,8 @@ def from_brep(name):
         _breptools_Read(s, name, b)
         return _convert_import(s)
     else:
-        print('Error: Can\'t find', name)
+        # print('Error: Can\'t find', name)
+        logger.error('Error: Can\'t find %s' % name)
 
 
 def from_iges(name):
@@ -1213,11 +1221,13 @@ def from_iges(name):
         status = reader.ReadFile(name)
         okay = reader.TransferRoots()
         if not okay:
-            print('Warning: Could not translate all shapes')
+            # print('Warning: Could not translate all shapes')
+            logger.warning('Warning: Could not translate all shapes')
         shape = reader.OneShape()
         return _convert_import(shape)
     else:
-        print('Error: Can\'t find', name)
+        # print('Error: Can\'t find', name)
+        logger.error('Error: Can\'t find %s' % name)
 
 
 def from_step(name):
@@ -1550,11 +1560,13 @@ def from_svg(name):
                 index += 1
 
             elif cmd in cmds:  # Need to do these some time
-                print('Error:', cmd, 'not implemented in path:', path)
+                # print('Error:', cmd, 'not implemented in path:', path)
+                logger.error(str(('Error:', cmd, 'not implemented in path:', path)))
                 _sys.exit()
 
             else:
-                print('Error: svg path type unknown', cmd)
+                # print('Error: svg path type unknown', cmd)
+                logger.error(str(('Error: svg path type unknown', cmd)))
                 _sys.exit()
 
         finish_wire()
@@ -2273,7 +2285,8 @@ class Shape(object):
         # Write
         okay = w.AddShape(self.shape)
         if not okay:
-            print('Warning: Could not translate all shapes')
+            # print('Warning: Could not translate all shapes')
+            logger.warning('Warning: Could not translate all shapes')
         w.Write(name)
 
     def to_step(self, name, **options):
@@ -2369,7 +2382,8 @@ class Shape(object):
         if okay in [_IFSelect.IFSelect_RetError,
                     _IFSelect.IFSelect_RetFail,
                     _IFSelect.IFSelect_RetStop]:
-            print('Error: Could not translate shape to step')
+            # print('Error: Could not translate shape to step')
+            logger.error('Error: Could not translate shape to step')
         else:
             w.Write(name)
 
@@ -2378,65 +2392,27 @@ class Shape(object):
     #            specular_color=(1, 1, 1), shininess=0.9, transparency=0.,
     #            line_color=(0, 0., 0.), line_width=2., mesh_quality=1.):
 
-    def to_html(self, name, **options):
+    #def to_html(self, name, **options):
+    def to_html(self, filename_html):
         r"""Generates an html file to view the Shape in the browser
 
         Parameters
         ----------
-        name : str
+        filename_html : str
             name of the html file
-        vertex_shader : str
-        fragment_shader : str
-        export_edges : bool
-        color : tuple
-        specular_color : tuple
-        shininess : float
-            Between 0. and 1.
-        transparency: float
-            Between 0. and 1.
-        line_color : tuple
-        line_width : int
-        mesh_quality : float
-
         """
-        defaults = {'vertex_shader':None,
-                  'fragment_shader':None,
-                  'export_edges':False,
-                  'color':(0.65,0.65,0.65),
-                  'specular_color':(1,1,1),
-                  'shininess':0.9,
-                  'transparency':0,
-                  "line_color":(0,0,0),
-                  "line_width":2.,
-                  "mesh_quality":1
-                  }
-        for k in defaults: 
-            if k not in options:
-                options[k]=defaults[k]
-
-
         class X3DomRendererCustomized(X3DomRenderer):
-            r"""Customized version of X3DomRenderer where the html file name can
-            be specified"""
-            def __init__(self, path):
-                # Intentionally not calling superclass constructor
-                self._path = os.path.dirname(path)
-                self._html_filename = path
-                self._x3d_shapes = []
+            def __init__(self, path_, background_color="#123345"):
+                # Intentionally not calling super constructor
+                self._background_color = background_color
+                name_no_extension, _ = os.path.splitext(os.path.basename(path_))
+                self._folder_path = os.path.dirname(path_)
+                self._x3d_filename = os.path.join(self._folder_path,
+                                                  '%s.x3d' % name_no_extension)
+                self._html_filename = path_
 
-        renderer = X3DomRendererCustomized(name)
-        renderer.DisplayShape(self.shape, 
-                              options['vertex_shader'], 
-                              options['fragment_shader'],
-                              options['export_edges'], 
-                              options['color'], 
-                              options['specular_color'],
-                              options['shininess'],
-                              options['transparency'],
-                              options['line_color'],
-                              options['line_width'],
-                              options['mesh_quality'])
-        renderer.GenerateHTMLFile()
+        renderer = X3DomRendererCustomized(path_=filename_html)
+        renderer.create_files(shape=self.shape)
 
     def translate(self, pdir):
         """
@@ -2653,7 +2629,9 @@ class Shape(object):
         if stype in self._valid_subshapes():
             return True
         else:
-            print('Warning: ' + stype + ' is not a subshape of ' + self.stype)
+            # print('Warning: ' + stype + ' is not a subshape of ' + self.stype)
+            msg = 'Warning: ' + stype + ' is not a subshape of ' + self.stype
+            logger.warning(msg)
             return False
 
     def subshapes(self, stype):
@@ -2706,7 +2684,8 @@ class Shape(object):
         """
         Finds the center of mass of the shape.
         """
-        print('Center not defined for', self.stype)
+        # print('Center not defined for', self.stype)
+        logger.error('Center not defined for %s' % str(self.stype))
         _sys.exit()
 
     def subcenters(self, stype):
@@ -2784,8 +2763,11 @@ class Shape(object):
                     suffix = ' tolerance: %.4e' % s.tolerance()
                 else:
                     suffix = ''
-                print('.' * _level + '%s%d location: (%.6f,%.6f,%.6f)%s' %
-                     (t, count, x, y, z, suffix))
+                msg = '.' * _level + '%s%d location: (%.6f,%.6f,%.6f)%s' % \
+                                     (t, count, x, y, z, suffix)
+                # print('.' * _level + '%s%d location: (%.6f,%.6f,%.6f)%s' %
+                #      (t, count, x, y, z, suffix))
+                logger.info(msg)
                 if not flat:
                     s.dump(False, _level + 1)
 
@@ -3047,7 +3029,9 @@ class Wire(Shape):
                 elif e.stype == 'Wire':
                     b.Add(_TopoDS_wire(e.shape))
                 else:
-                    print('Error: Cannot add', e.stype, 'to wire.')
+                    # print('Error: Cannot add', e.stype, 'to wire.')
+                    msg = 'Error: Cannot add %s to wire.' % str(e.stype)
+                    logger.error(msg)
             self.shape = b.Wire()
         elif isinstance(es, _TopoDS.TopoDS_Wire):
             self.shape = es
@@ -3298,7 +3282,8 @@ class Shell(Shape):
                 b.Add(f.shape)
             b.Perform()
             self.shape = b.SewedShape()
-            print('sewing type:', self._raw_type())
+            # print('sewing type:', self._raw_type())
+            logger.info('sewing type: %s ' % str(self._raw_type()))
         elif isinstance(fs, _TopoDS.TopoDS_Shell):
             self.shape = fs
         elif isinstance(fs, _TopoDS.TopoDS_Shape) and _raw_type(fs) == 'Shell':
@@ -3644,28 +3629,33 @@ class Solid(Shape):
             pairs = []
             merge_count = 0
             for rec, raw_edge in enumerate(raw_edges):
-                if stopat >= 0 and rec == stopat:
+                # if stopat >= 0 and rec == stopat:
+                if rec == stopat >= 0:
                     break
-                print('raw edge', rec, end='')
+                # print('raw edge', rec, end='')
+                logger.info(str(('raw edge', rec)))
                 l1 = edge_map.FindFromKey(raw_edge)
                 f1 = l1.First()  # Assumes only two faces per edge
                 f2 = l1.Last()
                 h1 = f1.__hash__()
                 h2 = f2.__hash__()
                 if h1 == h2:  # Avoid seam edges
-                    print('Seam')
+                    # print('Seam')
+                    logger.info("\tSeam")
                     continue
                 elif h1 > h2:
                     pair = (h2, h1)
                 else:
                     pair = (h1, h2)
                 if pair in pairs:
-                    print('Skipped')
+                    # print('Skipped')
+                    logger.info("\tSkipped")
                     continue
                 else:
                     pairs.append(pair)
                 if _raw_faces_same_domain(f1, f2, skip_fits):
-                    print('Merge')
+                    # print('Merge')
+                    logger.info("\tMerge")
                     merge_count += 1
                     if f1 not in common_faces:
                         if f2 not in common_faces:
@@ -3701,7 +3691,8 @@ class Solid(Shape):
                         common_faces[f2] = index
                     else:  # Both in common_faces
                         if common_faces[f1] == common_faces[f2]:
-                            print('Done already')
+                            # print('Done already')
+                            logger.info("\tDone already")
                         else:
                             index = common_faces[f1]
                             index2 = common_faces[f2]
@@ -3718,12 +3709,13 @@ class Solid(Shape):
                             new_faces[index2] = None
 
                 else:
-                    print('Different')
+                    # print('Different')
+                    logger.info("\tDifferent")
 
             if len(new_faces) <= 0:  # No common faces
                 return
             else:
-                print("")
+                # print("")
                 # BRep_Builder may be faster than BRepBuilderAPI_Sewing
                 raw_faces = self._raw('Face')
                 for f in common_faces.keys():
@@ -3741,7 +3733,8 @@ class Solid(Shape):
                     b2.Add(_TopoDS_shell(new_shell))
                     self.shape = b2.Solid()
                 elif _raw_type(new_shell) == 'compound':
-                    print('Warning: simplify() returned compound')
+                    # print('Warning: simplify() returned compound')
+                    logger.warning('Warning: simplify() returned compound')
                     s = Solid(new_shell)
                     css = s._raw('Shell')
                     c = _TopoDS.TopoDS_Compound()
@@ -3753,8 +3746,11 @@ class Solid(Shape):
                         b3.Add(c, b2.Solid())
                     self.shape = c
                 else:
-                    print('Warning: Wrong Sewed Shape after simplify():', \
-                        _raw_type(new_shell))
+                    # print('Warning: Wrong Sewed Shape after simplify():', \
+                    #     _raw_type(new_shell))
+                    msg = 'Warning: Wrong Sewed Shape after simplify(): %s' % \
+                          str(_raw_type(new_shell))
+                    logger.warning(msg)
                     self.shape = new_shell
 
 
@@ -3844,8 +3840,11 @@ def arc_ellipse(rad1, rad2, start_angle, end_angle):
 
     """
     if rad2 > rad1:
-        print('Error: Major radius ', rad1,
-              ' must be greater than minor radius ', rad2)
+        # print('Error: Major radius ', rad1,
+        #       ' must be greater than minor radius ', rad2)
+        msg = 'Error: Major radius %s must be greater than minor radius %s' % \
+              (str(rad1), str(rad2))
+        logger.error(msg)
         _sys.exit()
     return Edge(_BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
             _GC_MakeArcOfEllipse(
@@ -3970,8 +3969,11 @@ def ellipse(rad1, rad2):
 
     """
     if rad2 > rad1:
-        print('Error: Major radius ', rad1,
-              ' must be greater than minor radius ', rad2)
+        # print('Error: Major radius ', rad1,
+        #       ' must be greater than minor radius ', rad2)
+        msg = 'Error: Major radius %s must be greater than minor radius %s' % \
+              (str(rad1), str(rad2))
+        logger.error(msg)
         _sys.exit()
     return Edge(_BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
             _gp.gp_Elips(_gp.gp_Ax2(_gp.gp_Pnt(0.0, 0.0, 0.0),
@@ -4089,7 +4091,8 @@ def helix(rad, angle, turns, eps=1e-12):
     num_parts = int(frac_parts)
     rem_parts = frac_parts - num_parts
     if abs(rem_parts) > eps:
-        print('Error: Fractional turns not currently supported.')
+        # print('Error: Fractional turns not currently supported.')
+        logger.error('Error: Fractional turns not currently supported.')
         _sys.exit()
 
     # Calculate a quarter helix using a weighted bezier
@@ -4572,7 +4575,8 @@ def prism(s, pdir):
     elif s.stype == 'Face':
         return Solid(b.Shape())
     else:
-        print('Error: Improper type for prism', s.stype)
+        # print('Error: Improper type for prism', s.stype)
+        logger.error('Error: Improper type for prism: s' % str(s.stype))
 
 
 def revol(s, pabout, pdir, angle):
@@ -4612,7 +4616,8 @@ def revol(s, pabout, pdir, angle):
     elif s.stype == 'Face':
         return Solid(b.Shape())
     else:
-        print('Error: Improper type for prism', s.stype)
+        # print('Error: Improper type for prism', s.stype)
+        logger.error('Error: Improper type for revol: s' % str(s.stype))
 
 
 def loft(ws, ruled=False, stype='Solid'):
@@ -4695,7 +4700,8 @@ def plane_loft(ws, stype='Solid'):
             try:
                 faces.append(plane(p))
             except NameError:
-                print('Error: Not Planar')
+                # print('Error: Not Planar')
+                logger.error('Error: Not Planar')
                 _sys.exit()
                 # The loft must have slightly changed edges or vertices,
                 # because this was a mess.
@@ -4893,7 +4899,9 @@ def offset(s1, dist, tolerance=1e-3, join='arc', mode='skin'):
         elif _raw_type(raw_shape) == 'Solid':
             ss.append(Solid(raw_shape))
         else:
-            print('Warning: Unexpected type', _raw_type(raw_shape))
+            # print('Warning: Unexpected type', _raw_type(raw_shape))
+            logger.warning('Warning: Unexpected type %s' %
+                           str(_raw_type(raw_shape)))
         return ss
 
     elif s1.stype == 'Face':
@@ -4930,4 +4938,5 @@ def offset(s1, dist, tolerance=1e-3, join='arc', mode='skin'):
         return fs
 
     else:
-        print('Error: Only solid or face allowed for offset')
+        # print('Error: Only solid or face allowed for offset')
+        logger.error('Error: Only solid or face allowed for offset')
