@@ -36,12 +36,11 @@ def reverse_engineering_with_ccad(_step_filename,dirname='step',view=False ,dire
     """
     step_filename = os.path.join(dirname,_step_filename)
     # get Assembly from step file
-    assembly = cm.Assembly.from_step(step_filename, direct= direct)
+    assembly = cm.Assembly()
+    # read from step file
+    assembly.from_step(step_filename, direct= direct)
     # tag nodes with geometrical information
     assembly.tag_nodes()
-
-
-
     # save individual components in separated files
     assembly.write_components()
 
@@ -250,7 +249,7 @@ if __name__ == "__main__":
 #    u6 = np.dot(v6,p6)-p6t
 #    u7 = np.dot(v7,p7)-p7t
    
-    #x.save_gml()
-    #x.save_json()
+    x.save_gml()
+    x.save_json()
     node_index=[0,1]
     #lsh,lV,lptm=view_assembly_nodes(x,node_index=node_index)

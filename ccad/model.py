@@ -1787,10 +1787,10 @@ class Assembly(nx.DiGraph):
     Each node of an Assembly represents a solid
     Each node of an Assembly is described in an external file 
     A node has the following attributes : 
-        'pcloud' : a point cloud
-        'q' : a pure quaternion , 
-        'S' : a symmetry matrix , 
-        't' : a translation vector 
+        'name' : name of the origin file (step file or python file) 
+        'V' : a unitary matrix
+        'dim' : a dimension integer 
+        'ptc' : a translation vector 
     
     Members
     -------
@@ -1812,7 +1812,7 @@ class Assembly(nx.DiGraph):
 
 
     """
-    def __init__(self, solid, origin=None, direct=False):
+    def __init__(self):
         """
 
         Parameters
@@ -1820,7 +1820,7 @@ class Assembly(nx.DiGraph):
 
         solid : ccad.Solid
         origin : str
-            The file or script the assembly was created from
+            the file or script the assembly was created from
         direct : bool, optional(default is False)
             If True, directly use the point cloud of the Shell
             If False, iterate the faces, wires and then vertices
@@ -1828,9 +1828,28 @@ class Assembly(nx.DiGraph):
         """
         nx.DiGraph.__init__(self)
 
-        self.solid = solid
+    def from_step(self, filename, direct=False):
+        """
+        
+        Parameters
+        ----------
+
+        filename : str
+            Path to the STEP file
+        direct : bool, optional(default is False)
+            If True, directly use the point cloud of the Shell
+            If False, iterate the faces, wires and then vertices
+
+        Returns
+        -------
+
+        Assembly : the new Assembly object created from a STEP file
+
+
+        """
+        self.solid = from_step(filename)
         self.pos = dict()
-        self.origin = origin
+        self.origin = filename 
         self.bclean = False
 
         shells = self.solid.subshapes("Shell")
@@ -1886,30 +1905,6 @@ class Assembly(nx.DiGraph):
                         dist=d[u], 
                         ptc = ptc)
                 inode +=1
-
-    @classmethod
-    def from_step(cls, filename, direct=False):
-        r"""Create an Assembly instance from a STEP file
-
-        Parameters
-        ----------
-
-        filename : str
-            Path to the STEP file
-        direct : bool, optional(default is False)
-            If True, directly use the point cloud of the Shell
-            If False, iterate the faces, wires and then vertices
-
-        Returns
-        -------
-
-        Assembly : the new Assembly object created from a STEP file
-
-        """
-        solid = from_step(filename)
-        return cls(solid, origin=filename, direct=direct)
-
-
 
     def tag_nodes(self):
         r"""Add computed data to each node of the assembly
@@ -2013,6 +2008,15 @@ class Assembly(nx.DiGraph):
         self.bclean = True
 
     def serialize(self):
+        """ serialize matrix in assembly
+
+        Notes
+        -----
+
+        iterates on nodes 
+        get unitary matrix V and ravels it 
+
+        """
         for (n,d) in self.nodes(data=True):
             V = d['V']
             ptc = d['ptc']
@@ -2026,6 +2030,14 @@ class Assembly(nx.DiGraph):
             d['ptc']=lptc
 
     def unserialize(self):
+        """ unserialize matrix in assembly 
+
+        Notes 
+        -----
+        In the gml file the 3x3 matrix is stored as a line
+        this function recover the matrix form
+
+        """
         for (n,d) in self.nodes(data=True):
             lV = d['V']
             lptc = d['ptc']
