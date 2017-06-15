@@ -2057,8 +2057,15 @@ class Assembly(nx.DiGraph):
             json.dump(data,fd)
         self.unserialize()
 
-    def load(self):
-        pass
+    def load_json(self,filename):
+        """ load Assembly from json file
+        """
+        pdb.set_trace()
+        fd = open(filename,'r')
+        data = json.load(fd)
+        fd.close()
+        self = json_graph.node_link_graph(data,directed=True)
+        self.origin = filename
 
     def save_gml(self):
         if not self.bclean:

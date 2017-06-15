@@ -136,15 +136,13 @@ def view_assembly_graph(x,fontsize=18,v=20,bsave=False,bshow=True,blabels=False,
     if bshow:
         plt.show()
 
-def view_assembly_nodes(x,node_index=[0]):
+def view_assembly_nodes(x,node_index=-1):
     """
     Parameters
     ----------
 
     x : An Assembly Graph
     node_index : a list of Assembly nodes (-1 : all nodes)
-    typ : string 
-        'original' | 'parts'
 
     Notes
     -----
@@ -239,7 +237,7 @@ if __name__ == "__main__":
     # view_topology_with_aocutils(filename)
     x = reverse_engineering_with_ccad(filename,view=False,direct=True)
     #x.node[7]['mz']=False
-    #lsh,lV,lptm=view_assembly_nodes(x,node_index=[6,7],typ='splitted')
+    lsh,lV,lptm=view_assembly_nodes(x,node_index=[6,7])
 #    p6 = x.node[6]['pcloud']
 #    p6t = x.node[6]['pc']
 #    v6 = x.node[6]['V']
