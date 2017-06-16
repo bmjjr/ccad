@@ -175,7 +175,7 @@ def view_assembly_nodes(x,node_index=-1):
     #
     #lshapes1 = [x.node[k]['shape'] for k in node_index] 
     # get the list of all filename associated with Assembly x
-    lfiles = [x.node[k]['name']+'.stp' for k in node_index] 
+    lfiles = [str(x.node[k]['name'])+'.stp' for k in node_index] 
     # select directory where node files are saved
     # temporary 
     #
@@ -184,6 +184,7 @@ def view_assembly_nodes(x,node_index=-1):
     rep = os.path.join('.',fileorig)
 
     # get the local frame shapes from the list .step files  
+    pdb.set_trace()
     lshapes2 = [cm.from_step(os.path.join(rep,s)) for s in lfiles] 
     
 
