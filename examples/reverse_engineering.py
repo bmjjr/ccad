@@ -164,6 +164,10 @@ def view_assembly_nodes(x,node_index=-1):
             node_index=[node_index]
 
     assert(max(node_index)<=max(x.node.keys())),"Wrong node index"
+
+    if x.serialized:
+        s.unserialize()
+
     # viewer initialisation
     ccad_viewer = cd.view()
     # get the list of all shape associated with Assembly x
@@ -184,7 +188,6 @@ def view_assembly_nodes(x,node_index=-1):
     rep = os.path.join('.',fileorig)
 
     # get the local frame shapes from the list .step files  
-    pdb.set_trace()
     lshapes2 = [cm.from_step(os.path.join(rep,s)) for s in lfiles] 
     
 

@@ -1827,6 +1827,7 @@ class Assembly(nx.DiGraph):
 
         """
         nx.DiGraph.__init__(self)
+        self.serialized = False
 
     def from_step(self, filename, direct=False):
         """
@@ -2028,13 +2029,14 @@ class Assembly(nx.DiGraph):
             assert(np.isclose(ptc-ptcr,0).all())
             d['V']=lV
             d['ptc']=lptc
+        self.serialized=True
 
     def unserialize(self):
         """ unserialize matrix in assembly 
 
         Notes 
         -----
-        In the gml file the 3x3 matrix is stored as a line
+        In the gml or json file the 3x3 matrix is stored as a line
         this function recover the matrix form
 
         """
@@ -2045,6 +2047,7 @@ class Assembly(nx.DiGraph):
             Vr = np.array(eval(lV)).reshape(3,3)   
             d['V']=Vr
             d['ptc']=ptcr
+        self.serialized=False
 
     def save_json(self):
         if not self.bclean:
@@ -2069,6 +2072,7 @@ class Assembly(nx.DiGraph):
         self.node = G.node
         self.edge = G.edge
         self.origin = filename
+        self.unserialize()
 
     def save_gml(self):
         if not self.bclean:
